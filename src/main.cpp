@@ -1,14 +1,15 @@
 #include <Arduino.h>
 
-const bool DEBUG = false;
+#define DEBUG false
 
-// Set display class
 #include <GxEPD2_BW.h>
 #include <Fonts/FreeSans9pt7b.h>
 const GFXfont *font = &FreeSans9pt7b;
 #include "GxEPD2_display_selection.h"
 
-const char HelloWorld[] = "Hello World!";
+#include "alignment.h"
+#include "elements.h"
+
 uint8_t channel_selection = 0;
 
 void logTime(const char* label, uint32_t start_time)
@@ -23,109 +24,72 @@ void logTime(const char* label, uint32_t start_time)
   }
 }
 
-void partialRefresh()
-{
-  uint32_t t_start = 0;
-  if (DEBUG)
-  {
-    t_start = millis();
-    Serial.println("partialRefresh: start");
-  }
+Container channels = Container(Container::HORIZONTAL);
+Container infoBox = Container(Container::HORIZONTAL);
 
+void setupChannels() {
   const String bottom_texts[] = {"P1", "P2", "P3", "P4"};
-  const uint8_t num_items = sizeof(bottom_texts) / sizeof(bottom_texts[0]);
-  const int16_t gap = 10, margin = 8, box_margin = 4, box_margin_h = 16, corner_radius = 12;
-  int16_t texts_x[num_items], y=display.height(), box_w = 0, box_h = 0;
-  
-  for (uint8_t i = 0; i < num_items; i++)
+
+  channels.x = 0;
+  channels.y = display.height() - 20;
+  channels.w = display.width();
+  channels.h = 40;
+  channels.setMargin(8, 0);
+
+  for (uint8_t i = 0; i < sizeof(bottom_texts) / sizeof(bottom_texts[0]); i++)
   {
-    int16_t tbx, tby; uint16_t tbw, tbh;
-    display.getTextBounds(bottom_texts[i].c_str(), 0, 0, &tbx, &tby, &tbw, &tbh);
-    box_w = max(box_w, int16_t(tbw + 2 * box_margin_h));
-    box_h = max(box_h, int16_t(tbh + 2 * box_margin));
-  }
-
-  logTime("text bound measure", t_start);
-
-  const int16_t dist = (display.width() - 2 * gap - box_w) / (num_items - 1);
-
-  for (uint8_t i = 0; i < num_items; i++)
-  {
-    int16_t tbx, tby; uint16_t tbw, tbh;
-    display.getTextBounds(bottom_texts[i].c_str(), 0, 0, &tbx, &tby, &tbw, &tbh);
-  
-    texts_x[i] = gap + box_w / 2 + i * dist - tbw / 2 - tbx;
+    Container* channel_box = new Container();
+    channel_box->border = true;
+    channel_box->borderRadius = 12;
+    channel_box->setMargin(8, 4);
+    channel_box->selected = (i + 1 == channel_selection);
     
-    y = min(y, int16_t(display.height() - margin/2)); 
+    TextElement* channel_text = new TextElement(bottom_texts[i], TOP_CENTER);
+    channel_box->addChild(channel_text);
+    channels.addChild(channel_box);
+  }
+  channels.arrange();
+}
+void channelRefresh()
+{
+  for (uint8_t i = 0; i < channels.children.size(); i++)
+  {
+    channels.children[i]->selected = (i + 1 == channel_selection);
   }
 
-  logTime("coordinate calc", t_start);
-
-  int16_t partialWindow[4] = {int16_t(gap - margin), int16_t(y - box_h + box_margin - margin), int16_t((display.width() - 2 * gap + 2 * margin)), int16_t(box_h + 2 * margin - 1)};
-  display.setPartialWindow(partialWindow[0], partialWindow[1], partialWindow[2], partialWindow[3]);
+  display.setPartialWindow(channels.x, channels.y, channels.w, channels.h);
   display.firstPage();
-  logTime("setPartialWindow and firstPage", t_start);
   do {
-    logTime("start page loop iteration", t_start);
     display.fillScreen(GxEPD_WHITE);
-    logTime("fillScreen", t_start);
-    for (uint8_t i = 0; i < num_items; i++)
-    {
-      if (i + 1 == channel_selection)
-      {
-        display.fillRoundRect(texts_x[i] - box_margin_h, y - box_h + box_margin, box_w, box_h + 2*corner_radius, corner_radius, GxEPD_BLACK);
-        display.setTextColor(GxEPD_WHITE);
-      } else
-      {
-        display.drawRoundRect(texts_x[i] - box_margin_h, y - box_h + box_margin, box_w, box_h + 2*corner_radius, corner_radius, GxEPD_BLACK);
-        display.setTextColor(GxEPD_BLACK);
-      }
-      display.setCursor(texts_x[i], y);
-      display.print(bottom_texts[i]);
-      
-      
-      if (DEBUG)
-      {
-        // Draw rect around text with margins removed for debugging
-        display.drawRect(texts_x[i], y - box_h + 2 * box_margin, box_w - 2 * box_margin_h, box_h - 2 * box_margin, GxEPD_BLACK);
-        // Draw border around the entire partialWindow for debugging
-        display.drawRect(partialWindow[0], partialWindow[1], partialWindow[2], partialWindow[3], GxEPD_BLACK);
-      }
-    }
-    logTime("draw elements", t_start);
+    channels.draw(display);
   } while (display.nextPage());
-  logTime("loop+draw total", t_start);
 }
 
-void helloWorld()
+void infoRefresh()
 {
-  int16_t tbx, tby; uint16_t tbw, tbh;
-  display.getTextBounds(HelloWorld, 0, 0, &tbx, &tby, &tbw, &tbh);
-  // center the bounding box by transposition of the origin:
-  uint16_t x = ((display.width() - tbw) / 2) - tbx;
-  uint16_t y = ((display.height() - tbh) / 2) - tby;
-  display.setFullWindow();
-  display.firstPage();
-  do
-  {
-    display.fillScreen(GxEPD_WHITE);
-    display.setCursor(x, y);
-    display.print(HelloWorld);
+  infoBox.x = channels.children[0]->x;
+  infoBox.y = infoBox.x;
+  Container* p3 = static_cast<Container*>(channels.children[2]);
+  infoBox.w = p3->x + p3->w - infoBox.x;
+  infoBox.h = p3->y - infoBox.y - 4;
+  infoBox.border = true;
+  infoBox.borderRadius = 20;
+  infoBox.setMargin(8, 8);
 
-    if (DEBUG)
-    {
-      // Draw outline around entire display
-      display.drawRect(0, 0, display.width(), display.height(), GxEPD_BLACK);
-    }
-  }
-  while (display.nextPage());
+  TextElement* infoText = new TextElement("Info", TOP_CENTER);
+  infoBox.addChild(infoText);
+  infoBox.arrange();
+  display.setPartialWindow(infoBox.x, infoBox.y, infoBox.w, infoBox.h);
+  display.firstPage();
+  do {
+    infoBox.draw(display);
+  } while (display.nextPage());
 }
 
 void setup()
 {
-  //display.init(115200); // default 10ms reset pulse, e.g. for bare panels with DESPI-C02
   display.init(115200, true, 2, false);
-  display.setRotation(1);
+  display.setRotation(3);
   display.setFont(font);
   display.setTextColor(GxEPD_BLACK);
 
@@ -135,13 +99,14 @@ void setup()
     while (!Serial) ;
     Serial.println("DEBUG enabled: serial timing logs on");
   }
-  helloWorld();
+
+  setupChannels();
+  channelRefresh();
+  infoRefresh();
   do
   {
-    // Add C++ timer to check how long the refresh takes
-    partialRefresh();
+    channelRefresh();
     channel_selection = channel_selection % 5 + 1;
-    // delay(3000);
   } while (channel_selection <= 5);
 
   display.hibernate();
