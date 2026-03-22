@@ -16,8 +16,9 @@ public:
 
 class Container : public Element {
 public:
-  uint16_t margin = 0, margin_h = 0, margin_v = 0;
+  uint16_t margin = 0, margin_h = 0, margin_v = 0, margin_inner = 0;
   std::vector<Element*> children;
+  std::vector<float> childSizes;
   enum Orientation { HORIZONTAL, VERTICAL };
   Orientation orientation;
   bool border = false;
@@ -41,6 +42,8 @@ public:
   void setMargin(uint16_t m);
 
   void setMargin(uint16_t mh, uint16_t mv);
+
+  void setMargin(uint16_t mh, uint16_t mv, uint16_t mi);
 };
 
 class TextElement : public Element {

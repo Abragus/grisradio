@@ -12,7 +12,7 @@ void Container::arrange() {
   if (children.empty()) return;
   int16_t arrange_margin = (orientation == HORIZONTAL) ? margin_h : margin_v;
   int16_t total_space = (orientation == HORIZONTAL) ? w : h;
-  float item_size = (total_space - (children.size() + 1) * arrange_margin) / children.size();
+  float item_size = (total_space - (children.size() - 1) * margin_inner - 2 * arrange_margin) / children.size();
   float current_pos = (orientation == HORIZONTAL) ? x + margin_h : y + margin_v;
 
   for (auto child : children) {
@@ -27,7 +27,7 @@ void Container::arrange() {
       child->w = w - 2 * margin_h;
       child->h = item_size;
     }
-    current_pos += item_size + arrange_margin;
+    current_pos += item_size + margin_inner;
   }
 }
 
@@ -51,11 +51,19 @@ void Container::setMargin(uint16_t m) {
   margin = m;
   margin_h = m;
   margin_v = m;
+  margin_inner = m;
 }
 
 void Container::setMargin(uint16_t mh, uint16_t mv) {
   margin_h = mh;
   margin_v = mv;
+  margin_inner = (orientation == HORIZONTAL) ? margin_h : margin_v;
+}
+
+void Container::setMargin(uint16_t mh, uint16_t mv, uint16_t mi) {
+  margin_h = mh;
+  margin_v = mv;
+  margin_inner = mi;
 }
 
 void TextElement::draw(Adafruit_GFX& display, int color) {
@@ -73,5 +81,9 @@ void TextElement::draw(Adafruit_GFX& display, int color) {
 }
 
 void ShapeElement::draw(Adafruit_GFX& display, int color) {
+    if (DEBUG) {
+        display.drawRect(x, y, w, h, GxEPD_BLACK);
+    }
+
     if (drawFunc) drawFunc(display, x, y, w, h);
 }
