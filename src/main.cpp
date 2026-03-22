@@ -10,7 +10,14 @@ const GFXfont *font = &FreeSans9pt7b;
 #include "alignment.h"
 #include "elements.h"
 
+Container channels = Container(Container::HORIZONTAL);
+Container infoBox = Container(Container::VERTICAL);
+Container volumeBox = Container(Container::HORIZONTAL);
+
 uint8_t channel_selection = 0;
+float frequency = 92.8;
+String station_name = "Radio Trelleborg";
+uint8_t volume = 65;
 
 void logTime(const char* label, uint32_t start_time)
 {
@@ -23,9 +30,6 @@ void logTime(const char* label, uint32_t start_time)
     Serial.println(" ms");
   }
 }
-
-Container channels = Container(Container::HORIZONTAL);
-Container infoBox = Container(Container::HORIZONTAL);
 
 void setupChannels() {
   const String bottom_texts[] = {"P1", "P2", "P3", "P4"};
@@ -65,7 +69,7 @@ void channelRefresh()
   } while (display.nextPage());
 }
 
-void infoRefresh()
+void setupInfo()
 {
   infoBox.x = channels.children[0]->x;
   infoBox.y = infoBox.x;
@@ -74,15 +78,82 @@ void infoRefresh()
   infoBox.h = p3->y - infoBox.y - 4;
   infoBox.border = true;
   infoBox.borderRadius = 20;
-  infoBox.setMargin(8, 8);
+  infoBox.setMargin(12);
 
-  TextElement* infoText = new TextElement("Info", TOP_CENTER);
-  infoBox.addChild(infoText);
-  infoBox.arrange();
+  TextElement* frequencyText = new TextElement(String(frequency, 1) + " MHz", TOP_LEFT);
+  TextElement* stationText = new TextElement(station_name, TOP_LEFT);
+  infoBox.addChild(frequencyText);
+  infoBox.addChild(stationText);
   display.setPartialWindow(infoBox.x, infoBox.y, infoBox.w, infoBox.h);
   display.firstPage();
   do {
     infoBox.draw(display);
+  } while (display.nextPage());
+}
+
+void setupVolume() {
+  volumeBox.x = channels.children[3]->x;
+  volumeBox.y = infoBox.y;
+  volumeBox.border = true;
+  volumeBox.borderRadius = 20;
+  volumeBox.w = display.width() - volumeBox.x + volumeBox.borderRadius;
+  volumeBox.h = infoBox.h;
+  volumeBox.setMargin(6);
+
+  Container* volumeBar = new Container();
+  volumeBar->border = true;
+  volumeBar->borderRadius = 14;
+
+  ShapeElement* volumeLevel = new ShapeElement();
+  volumeLevel->drawFunc = [](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
+    uint8_t barMargin = 3;
+    Size barSize = {(int16_t)(w - 2 * barMargin), (int16_t)((h - 2 * barMargin) * volume / 100.0)};
+    Point startPoint = alignInsideBox(BOTTOM_CENTER, {x, y, w, h}, barSize, barMargin);
+    display.fillRoundRect(startPoint.x, startPoint.y - barMargin, barSize.w, barSize.h, 14 - barMargin, GxEPD_BLACK);
+  };
+
+  volumeBar->addChild(volumeLevel);
+  volumeBox.addChild(volumeBar);
+
+  Container* volumeIcons = new Container();
+  volumeIcons->orientation = Container::VERTICAL;
+  volumeIcons->setMargin(0, 0, volumeBox.margin_inner);
+
+  Container* plusButton = new Container();
+  plusButton->border = true;
+  plusButton->borderRadius = 14;
+  plusButton->setMargin(8);
+  ShapeElement* plusSymbol = new ShapeElement();
+  plusSymbol->drawFunc = [](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
+    const int16_t lineLength = min(w, h);
+    const int8_t lineWidth = 3;
+    Frame hLine = {alignInsideBox(MIDDLE_LEFT, {x, y, w, h}, Size(lineLength, lineWidth), 0), Size(lineLength, lineWidth)};
+    Frame vLine = {alignInsideBox(MIDDLE_CENTER, hLine, Size(lineWidth, lineLength), 0), Size(lineWidth, lineLength)};
+    display.fillRoundRect(hLine.x, hLine.y, hLine.w, hLine.h, lineWidth, GxEPD_BLACK);
+    display.fillRoundRect(vLine.x, vLine.y, vLine.w, vLine.h, lineWidth, GxEPD_BLACK);
+  };
+  plusButton->addChild(plusSymbol);
+  volumeIcons->addChild(plusButton);
+
+  Container* minusButton = new Container();
+  minusButton->border = true;
+  minusButton->borderRadius = 14;
+  minusButton->setMargin(8);
+  ShapeElement* minusSymbol = new ShapeElement();
+  minusSymbol->drawFunc = [](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
+    const int16_t lineLength = min(w, h);
+    const int8_t lineWidth = 3;
+    Frame hLine = {alignInsideBox(MIDDLE_LEFT, {x, y, w, h}, Size(lineLength, lineWidth), 0), Size(lineLength, lineWidth)};
+    display.fillRoundRect(hLine.x, hLine.y, lineLength, lineWidth, lineWidth, GxEPD_BLACK);
+  };
+  minusButton->addChild(minusSymbol);
+  volumeIcons->addChild(minusButton);
+  volumeBox.addChild(volumeIcons);
+
+  display.setPartialWindow(volumeBox.x, volumeBox.y, volumeBox.w, volumeBox.h);
+  display.firstPage();
+  do {
+    volumeBox.draw(display);
   } while (display.nextPage());
 }
 
@@ -101,8 +172,9 @@ void setup()
   }
 
   setupChannels();
-  channelRefresh();
-  infoRefresh();
+  setupInfo();
+  setupVolume();
+
   do
   {
     channelRefresh();
