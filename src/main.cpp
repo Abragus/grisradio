@@ -75,7 +75,7 @@ void setupInfo()
   infoBox.y = infoBox.x;
   Container* p3 = static_cast<Container*>(channels.children[2]);
   infoBox.w = p3->x + p3->w - infoBox.x;
-  infoBox.h = p3->y - infoBox.y - 4;
+  infoBox.h = p3->y - infoBox.y - channels.margin_inner;
   infoBox.border = true;
   infoBox.borderRadius = 20;
   infoBox.setMargin(12);
@@ -99,6 +99,7 @@ void setupVolume() {
   volumeBox.w = display.width() - volumeBox.x + volumeBox.borderRadius;
   volumeBox.h = infoBox.h;
   volumeBox.setMargin(6);
+  volumeBox.childSizes = {1, 2};
 
   Container* volumeBar = new Container();
   volumeBar->border = true;
@@ -107,7 +108,7 @@ void setupVolume() {
   ShapeElement* volumeLevel = new ShapeElement();
   volumeLevel->drawFunc = [](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
     uint8_t barMargin = 3;
-    Size barSize = {(int16_t)(w - 2 * barMargin), (int16_t)((h - 2 * barMargin) * volume / 100.0)};
+    Size barSize = {(uint16_t)(w - 2 * barMargin), (uint16_t)((h - 2 * barMargin) * volume / 100.0)};
     Point startPoint = alignInsideBox(BOTTOM_CENTER, {x, y, w, h}, barSize, barMargin);
     display.fillRoundRect(startPoint.x, startPoint.y - barMargin, barSize.w, barSize.h, 14 - barMargin, GxEPD_BLACK);
   };

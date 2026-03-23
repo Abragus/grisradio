@@ -11,23 +11,27 @@ int invertColor(int color) {
 void Container::arrange() {
   if (children.empty()) return;
   int16_t arrange_margin = (orientation == HORIZONTAL) ? margin_h : margin_v;
-  int16_t total_space = (orientation == HORIZONTAL) ? w : h;
-  float item_size = (total_space - (children.size() - 1) * margin_inner - 2 * arrange_margin) / children.size();
+  int16_t total_space = ((orientation == HORIZONTAL) ? w : h) - 2 * arrange_margin - margin_inner * (children.size() - 1);
+  float total_arrangement_parts = std::accumulate(childSizes.begin(), childSizes.end(), 0.0);
   float current_pos = (orientation == HORIZONTAL) ? x + margin_h : y + margin_v;
 
+  uint8_t i = 0;
   for (auto child : children) {
+    uint16_t element_size = total_space * (childSizes.empty() ? 1.0 / children.size() : (childSizes[i] / total_arrangement_parts));
+
     if (orientation == HORIZONTAL) {
       child->x = current_pos;
       child->y = y + margin_v;
-      child->w = item_size;
+      child->w = element_size;
       child->h = h - 2 * margin_v;
     } else {
       child->x = x + margin_h;
       child->y = current_pos;
       child->w = w - 2 * margin_h;
-      child->h = item_size;
+      child->h = element_size;
     }
-    current_pos += item_size + margin_inner;
+    current_pos += element_size + margin_inner;
+    i++;
   }
 }
 

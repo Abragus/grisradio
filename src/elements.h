@@ -2,6 +2,7 @@
 #define ELEMENTS_H
 
 #include <vector>
+#include<numeric>
 #include <Adafruit_GFX.h>
 #include <GxEPD2.h>
 #include "alignment.h"
