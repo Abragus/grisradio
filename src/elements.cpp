@@ -8,6 +8,15 @@ int invertColor(int color) {
   return (color == GxEPD_BLACK) ? GxEPD_WHITE : GxEPD_BLACK;
 }
 
+void Element::updateDisplay(GxEPD2_BW<GxEPD2_290_T94_V2, 296U>& display, int color) {
+  display.setPartialWindow(x, y, w, h);
+  display.firstPage();
+  do {
+    display.fillScreen(GxEPD_WHITE);
+    this->draw(display, color);
+  } while (display.nextPage());
+}
+
 void Container::arrange() {
   if (children.empty()) return;
   int16_t arrange_margin = (orientation == HORIZONTAL) ? margin_h : margin_v;
@@ -74,7 +83,6 @@ void TextElement::draw(Adafruit_GFX& display, int color) {
   int16_t tbx, tby; uint16_t tbw, tbh;
   display.getTextBounds(text.c_str(), 0, 0, &tbx, &tby, &tbw, &tbh);
   Point cursor = alignTextInsideBox(textAlignment, Frame(x, y, w, h), TextBoxSize(tbx, tby, tbw, tbh), 0);
-  // Point cursor = anchorText(textAlignment, Point(x + w/2, y + h/2), TextBoxSize(tbx, tby, tbw, tbh));
   display.setCursor(cursor.x, cursor.y);
   display.setTextColor(color);
   if (DEBUG) {

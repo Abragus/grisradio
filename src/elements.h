@@ -5,6 +5,7 @@
 #include<numeric>
 #include <Adafruit_GFX.h>
 #include <GxEPD2.h>
+#include "GxEPD2_BW.h"
 #include "alignment.h"
 
 class Element {
@@ -13,6 +14,8 @@ public:
   virtual void draw(Adafruit_GFX& display, int color = GxEPD_BLACK) = 0;
   virtual ~Element() {}
   bool selected = false;
+
+  void updateDisplay(GxEPD2_BW<GxEPD2_290_T94_V2, 296U>& display, int color = GxEPD_BLACK);
 };
 
 class Container : public Element {
@@ -61,7 +64,7 @@ using DrawCallback = std::function<void(Adafruit_GFX&, int16_t x, int16_t y, uin
 
 class ShapeElement : public Element {
 public:
-  DrawCallback drawFunc = nullptr; // The "brain" of the shape
+  DrawCallback drawFunc = nullptr;
 
   void draw(Adafruit_GFX& display, int color = GxEPD_BLACK) override;
 };

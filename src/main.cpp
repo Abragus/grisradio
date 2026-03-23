@@ -19,18 +19,6 @@ float frequency = 92.8;
 String station_name = "Radio Trelleborg";
 uint8_t volume = 65;
 
-void logTime(const char* label, uint32_t start_time)
-{
-  if (DEBUG)
-  {
-    Serial.print("partialRefresh: ");
-    Serial.print(label);
-    Serial.print(" = ");
-    Serial.print(millis() - start_time);
-    Serial.println(" ms");
-  }
-}
-
 void setupChannels() {
   const String bottom_texts[] = {"P1", "P2", "P3", "P4"};
 
@@ -61,12 +49,7 @@ void channelRefresh()
     channels.children[i]->selected = (i + 1 == channel_selection);
   }
 
-  display.setPartialWindow(channels.x, channels.y, channels.w, channels.h);
-  display.firstPage();
-  do {
-    display.fillScreen(GxEPD_WHITE);
-    channels.draw(display);
-  } while (display.nextPage());
+  channels.updateDisplay(display);
 }
 
 void setupInfo()
@@ -84,11 +67,8 @@ void setupInfo()
   TextElement* stationText = new TextElement(station_name, TOP_LEFT);
   infoBox.addChild(frequencyText);
   infoBox.addChild(stationText);
-  display.setPartialWindow(infoBox.x, infoBox.y, infoBox.w, infoBox.h);
-  display.firstPage();
-  do {
-    infoBox.draw(display);
-  } while (display.nextPage());
+
+  infoBox.updateDisplay(display);
 }
 
 void setupVolume() {
@@ -151,11 +131,7 @@ void setupVolume() {
   volumeIcons->addChild(minusButton);
   volumeBox.addChild(volumeIcons);
 
-  display.setPartialWindow(volumeBox.x, volumeBox.y, volumeBox.w, volumeBox.h);
-  display.firstPage();
-  do {
-    volumeBox.draw(display);
-  } while (display.nextPage());
+  volumeBox.updateDisplay(display);
 }
 
 void setup()
