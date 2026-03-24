@@ -18,14 +18,15 @@ uint8_t volume = 65;
 Container* setupChannels() {
   Container* channels = new Container(Container::HORIZONTAL);
   const String bottom_texts[] = {"P1", "P2", "P3", "P4"};
+  const uint8_t box_radius = 12;
 
-  channels->setMargin(8, 0);
-
+  channels->setMargin(0, 0, 8);
+  
   for (uint8_t i = 0; i < sizeof(bottom_texts) / sizeof(bottom_texts[0]); i++)
   {
     Container* channel_box = new Container();
     channel_box->border = true;
-    channel_box->borderRadius = 12;
+    channel_box->borderRadius = box_radius;
     channel_box->setMargin(8, 4);
     channel_box->selected = (i + 1 == channel_selection);
     
@@ -33,6 +34,8 @@ Container* setupChannels() {
     channel_box->addChild(channel_text);
     channels->addChild(channel_box);
   }
+
+  channels->padding_bottom = -1 * (box_radius + 6);
   
   return channels;
 }
@@ -67,6 +70,7 @@ Container* setupVolume() {
   volumeBox->border = true;
   volumeBox->borderRadius = 20;
   volumeBox->setMargin(6);
+  volumeBox->padding_right = -1 * (volumeBox->borderRadius + 6);
   volumeBox->childSizes = {1, 2};
 
   Container* volumeBar = new Container();
@@ -129,13 +133,13 @@ Container* setupGUI()
   GUIcontainer->y = 0;
   GUIcontainer->w = display.width();
   GUIcontainer->h = display.height();
-  GUIcontainer->setMargin(0, 0, 6);
+  GUIcontainer->setMargin(6);
 
-  GUIcontainer->childSizes = {3, 1};
+  GUIcontainer->childSizes = {6, 1};
 
   Container* upperGUI = new Container(Container::HORIZONTAL);
   upperGUI->setMargin(0, 0, 6);
-  upperGUI->childSizes = {3, 1};
+  upperGUI->childSizes = {7, 2};
   upperGUI->addChild(setupInfo());
   upperGUI->addChild(setupVolume());
   GUIcontainer->addChild(upperGUI);

@@ -8,6 +8,27 @@ int invertColor(int color) {
   return (color == GxEPD_BLACK) ? GxEPD_WHITE : GxEPD_BLACK;
 }
 
+void Element::setPadding(uint16_t p) {
+  padding_top = p;
+  padding_right = p;
+  padding_bottom = p;
+  padding_left = p;
+}
+
+void Element::setPadding(uint16_t ph, uint16_t pv) {
+  padding_top = pv;
+  padding_right = ph;
+  padding_bottom = pv;
+  padding_left = ph;
+}
+
+void Element::setPadding(uint16_t pt, uint16_t pr, uint16_t pb, uint16_t pl) {
+  padding_top = pt;
+  padding_right = pr;
+  padding_bottom = pb;
+  padding_left = pl;
+}
+
 void Element::updateDisplay(GxEPD2_BW<GxEPD2_290_T94_V2, 296U>& display, int color) {
   display.setPartialWindow(x, y, w, h);
   display.firstPage();
@@ -29,15 +50,15 @@ void Container::arrange() {
     uint16_t element_size = total_space * (childSizes.empty() ? 1.0 / children.size() : (childSizes[i] / total_arrangement_parts));
 
     if (orientation == HORIZONTAL) {
-      child->x = current_pos;
-      child->y = y + margin_v;
-      child->w = element_size;
-      child->h = h - 2 * margin_v;
+      child->x = current_pos + child->padding_left;
+      child->y = y + margin_v + child->padding_top;
+      child->w = element_size - child->padding_left - child->padding_right;
+      child->h = h - 2 * margin_v - child->padding_top - child->padding_bottom;
     } else {
-      child->x = x + margin_h;
-      child->y = current_pos;
-      child->w = w - 2 * margin_h;
-      child->h = element_size;
+      child->x = x + margin_h + child->padding_left;
+      child->y = current_pos + child->padding_top;
+      child->w = w - 2 * margin_h - child->padding_left - child->padding_right;
+      child->h = element_size - child->padding_top - child->padding_bottom;
     }
     current_pos += element_size + margin_inner;
     i++;
