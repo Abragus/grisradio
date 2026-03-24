@@ -2,7 +2,7 @@
 #define ELEMENTS_H
 
 #include <vector>
-#include<numeric>
+#include <numeric>
 #include <Adafruit_GFX.h>
 #include <GxEPD2.h>
 #include "GxEPD2_BW.h"

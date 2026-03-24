@@ -10,23 +10,16 @@ const GFXfont *font = &FreeSans9pt7b;
 #include "alignment.h"
 #include "elements.h"
 
-Container channels = Container(Container::HORIZONTAL);
-Container infoBox = Container(Container::VERTICAL);
-Container volumeBox = Container(Container::HORIZONTAL);
-
 uint8_t channel_selection = 0;
 float frequency = 92.8;
 String station_name = "Radio Trelleborg";
 uint8_t volume = 65;
 
-void setupChannels() {
+Container* setupChannels() {
+  Container* channels = new Container(Container::HORIZONTAL);
   const String bottom_texts[] = {"P1", "P2", "P3", "P4"};
 
-  channels.x = 0;
-  channels.y = display.height() - 20;
-  channels.w = display.width();
-  channels.h = 40;
-  channels.setMargin(8, 0);
+  channels->setMargin(8, 0);
 
   for (uint8_t i = 0; i < sizeof(bottom_texts) / sizeof(bottom_texts[0]); i++)
   {
@@ -38,48 +31,43 @@ void setupChannels() {
     
     TextElement* channel_text = new TextElement(bottom_texts[i], TOP_CENTER);
     channel_box->addChild(channel_text);
-    channels.addChild(channel_box);
+    channels->addChild(channel_box);
   }
-  channels.arrange();
+  
+  return channels;
 }
-void channelRefresh()
+
+void channelRefresh(Container* channels)
 {
-  for (uint8_t i = 0; i < channels.children.size(); i++)
+  for (uint8_t i = 0; i < channels->children.size(); i++)
   {
-    channels.children[i]->selected = (i + 1 == channel_selection);
+    channels->children[i]->selected = (i + 1 == channel_selection);
   }
 
-  channels.updateDisplay(display);
+  channels->updateDisplay(display);
 }
 
-void setupInfo()
+Container* setupInfo()
 {
-  infoBox.x = channels.children[0]->x;
-  infoBox.y = infoBox.x;
-  Container* p3 = static_cast<Container*>(channels.children[2]);
-  infoBox.w = p3->x + p3->w - infoBox.x;
-  infoBox.h = p3->y - infoBox.y - channels.margin_inner;
-  infoBox.border = true;
-  infoBox.borderRadius = 20;
-  infoBox.setMargin(12);
+  Container* infoBox = new Container(Container::VERTICAL);
+  infoBox->border = true;
+  infoBox->borderRadius = 20;
+  infoBox->setMargin(12);
 
   TextElement* frequencyText = new TextElement(String(frequency, 1) + " MHz", TOP_LEFT);
   TextElement* stationText = new TextElement(station_name, TOP_LEFT);
-  infoBox.addChild(frequencyText);
-  infoBox.addChild(stationText);
+  infoBox->addChild(frequencyText);
+  infoBox->addChild(stationText);
 
-  infoBox.updateDisplay(display);
+  return infoBox;
 }
 
-void setupVolume() {
-  volumeBox.x = channels.children[3]->x;
-  volumeBox.y = infoBox.y;
-  volumeBox.border = true;
-  volumeBox.borderRadius = 20;
-  volumeBox.w = display.width() - volumeBox.x + volumeBox.borderRadius;
-  volumeBox.h = infoBox.h;
-  volumeBox.setMargin(6);
-  volumeBox.childSizes = {1, 2};
+Container* setupVolume() {
+  Container* volumeBox = new Container(Container::HORIZONTAL);
+  volumeBox->border = true;
+  volumeBox->borderRadius = 20;
+  volumeBox->setMargin(6);
+  volumeBox->childSizes = {1, 2};
 
   Container* volumeBar = new Container();
   volumeBar->border = true;
@@ -94,12 +82,12 @@ void setupVolume() {
   };
 
   volumeBar->addChild(volumeLevel);
-  volumeBox.addChild(volumeBar);
+  volumeBox->addChild(volumeBar);
 
   Container* volumeIcons = new Container();
   volumeIcons->orientation = Container::VERTICAL;
-  volumeIcons->setMargin(0, 0, volumeBox.margin_inner);
-
+  volumeIcons->setMargin(0, 0, volumeBox->margin_inner);
+  
   Container* plusButton = new Container();
   plusButton->border = true;
   plusButton->borderRadius = 14;
@@ -129,9 +117,30 @@ void setupVolume() {
   };
   minusButton->addChild(minusSymbol);
   volumeIcons->addChild(minusButton);
-  volumeBox.addChild(volumeIcons);
+  volumeBox->addChild(volumeIcons);
 
-  volumeBox.updateDisplay(display);
+  return volumeBox;
+}
+
+Container* setupGUI()
+{
+  Container* GUIcontainer = new Container(Container::VERTICAL);
+  GUIcontainer->x = 0;
+  GUIcontainer->y = 0;
+  GUIcontainer->w = display.width();
+  GUIcontainer->h = display.height();
+  GUIcontainer->setMargin(0, 0, 6);
+
+  GUIcontainer->childSizes = {3, 1};
+
+  Container* upperGUI = new Container(Container::HORIZONTAL);
+  upperGUI->setMargin(0, 0, 6);
+  upperGUI->childSizes = {3, 1};
+  upperGUI->addChild(setupInfo());
+  upperGUI->addChild(setupVolume());
+  GUIcontainer->addChild(upperGUI);
+  GUIcontainer->addChild(setupChannels());
+  return GUIcontainer;
 }
 
 void setup()
@@ -148,13 +157,12 @@ void setup()
     Serial.println("DEBUG enabled: serial timing logs on");
   }
 
-  setupChannels();
-  setupInfo();
-  setupVolume();
+  Container* GUI = setupGUI();
 
+  GUI->updateDisplay(display);
   do
   {
-    channelRefresh();
+    channelRefresh(static_cast<Container*>(GUI->children[1]));
     channel_selection = channel_selection % 5 + 1;
   } while (channel_selection <= 5);
 
