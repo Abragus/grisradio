@@ -101,16 +101,64 @@ void Container::setMargin(uint16_t mh, uint16_t mv, uint16_t mi) {
 }
 
 void TextElement::draw(Adafruit_GFX& display, int color) {
-  int16_t tbx, tby; uint16_t tbw, tbh;
-  display.getTextBounds(text.c_str(), 0, 0, &tbx, &tby, &tbw, &tbh);
-  Point cursor = alignTextInsideBox(textAlignment, Frame(x, y, w, h), TextBoxSize(tbx, tby, tbw, tbh), 0);
-  display.setCursor(cursor.x, cursor.y);
+  int16_t tbx, tby;
+  uint16_t tbw, tbh;
+  int16_t lineSpacing = 2;
+
+  std::vector<String> lines;
+  String currentLine = "";
+  String word = "";
+  String tempText = text + " ";
+
+  for (size_t i = 0; i < tempText.length(); i++) {
+    char c = tempText.charAt(i);
+    if (c == ' ' || c == '\n') {
+      if (word.length() > 0) {
+        String testLine = (currentLine.length() > 0) ? currentLine + " " + word : word;
+        display.getTextBounds(testLine.c_str(), 0, 0, &tbx, &tby, &tbw, &tbh);
+
+        if (tbw > w && currentLine.length() > 0) {
+          lines.push_back(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+        word = "";
+      }
+      if (c == '\n' && currentLine.length() > 0) {
+        lines.push_back(currentLine);
+        currentLine = "";
+      }
+    } else {
+      word += c;
+    }
+  }
+  if (currentLine.length() > 0) lines.push_back(currentLine);
+
+  display.getTextBounds("Ay", 0, 0, &tbx, &tby, &tbw, &tbh);
+  uint16_t singleLineHeight = tbh;
+  uint16_t totalBlockHeight = (lines.size() * singleLineHeight) + ((lines.size() - 1) * lineSpacing);
+
   display.setTextColor(color);
+
+  for (size_t i = 0; i < lines.size(); i++) {
+    display.getTextBounds(lines[i].c_str(), 0, 0, &tbx, &tby, &tbw, &tbh);
+
+    int16_t lineOffsetY = i * (singleLineHeight + lineSpacing);
+
+    Point cursor = alignTextInsideBox(textAlignment, Frame(x, y, w, h), TextBoxSize(tbx, tby, tbw, totalBlockHeight), 0);
+
+    display.setCursor(cursor.x, cursor.y + lineOffsetY);
+    display.print(lines[i]);
+
+    if (DEBUG) {
+      display.drawRect(cursor.x + tbx, cursor.y + tby + lineOffsetY, tbw, tbh, GxEPD_BLACK);
+    }
+  }
+
   if (DEBUG) {
     display.drawRect(x, y, w, h, GxEPD_BLACK);
-    display.drawRect(cursor.x + tbx, cursor.y + tby, tbw, tbh, GxEPD_BLACK);
   }
-  display.print(text);
 }
 
 void ShapeElement::draw(Adafruit_GFX& display, int color) {
