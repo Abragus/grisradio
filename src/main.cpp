@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#define DEBUG false
+#define DEBUG true
 
 #include <GxEPD2_BW.h>
 #include <Fonts/FreeSans9pt7b.h>
@@ -18,6 +18,10 @@ uint8_t channel_selection = 0;
 float frequency = 92.8;
 String station_name = "Radio Trelleborg";
 uint8_t volume = 65;
+
+#include "Radio.h"
+
+Radio radio = Radio();
 
 void setupChannels() {
   const String bottom_texts[] = {"P1", "P2", "P3", "P4"};
@@ -136,10 +140,10 @@ void setupVolume() {
 
 void setup()
 {
-  display.init(115200, true, 2, false);
-  display.setRotation(3);
-  display.setFont(font);
-  display.setTextColor(GxEPD_BLACK);
+  //display.init(115200, true, 2, false);
+  //display.setRotation(3);
+  //display.setFont(font);
+  //display.setTextColor(GxEPD_BLACK);
 
   if (DEBUG)
   {
@@ -148,10 +152,11 @@ void setup()
     Serial.println("DEBUG enabled: serial timing logs on");
   }
 
-  setupChannels();
-  setupInfo();
-  setupVolume();
+  //setupChannels();
+  //setupInfo();
+  //setupVolume();
 
+  /*
   do
   {
     channelRefresh();
@@ -159,6 +164,20 @@ void setup()
   } while (channel_selection <= 5);
 
   display.hibernate();
+  */
+  Serial.println("test");
+  radio.setup(15);
+  Serial.println("test2");
+  //radio.seekDown();
+  radio.setFrequency(8880);
+  Serial.println("test3");
+  Serial.println(radio.getFrequency());
+  Serial.println("test4");
+  Serial.println(radio.getRdsTime());
+  Serial.println("test5");
+  
 }
 
-void loop() {};
+void loop() {
+  radio.print();
+};
