@@ -13,7 +13,6 @@ GUI::~GUI() {
 
 void GUI::begin() {
   buildLayout();
-  applyChannelSelection();
   applyInfo();
   applyVolume();
   xTaskCreate(displayWorker, "displayWorker", 2048, (void*)this, 1, &displayWorkerHandle);
@@ -40,22 +39,9 @@ void GUI::displayWorker(void* param) {
     }
 }
 
-void GUI::setChannel(uint8_t channel) {
-  if (channel < 1) channel = 1;
-  if (channel > 4) channel = 4;
-  if (channelSelection != channel) {
-    channelSelection = channel;
-    applyChannelSelection();
-    draw();
-  }
-}
-
-uint8_t GUI::getChannel() const {
-  return channelSelection;
-}
-
 void GUI::setFrequency(float freq) {
   frequency = freq;
+  updateActivePreset();
   applyInfo();
   draw();
 }
@@ -66,6 +52,50 @@ void GUI::changeFrequency(float delta) {
 
 float GUI::getFrequency() const {
   return frequency;
+}
+
+bool GUI::setPresetFrequency(uint8_t preset, float freq) {
+  if (preset < 1 || preset > 4) return false;
+  
+  presetFrequencies[preset - 1] = freq;
+  
+  if (preset == activePreset) {
+    activePreset = 0;
+  }
+  return true;
+}
+
+float GUI::getPresetFrequency(uint8_t preset) const {
+  if (preset < 1 || preset > 4) return -1;
+  return presetFrequencies[preset - 1];
+}
+
+float GUI::activatePreset(uint8_t preset) {
+  if (preset < 1 || preset > 4) return -1;
+
+  if (activePreset != preset) {
+    activePreset = preset;
+    setFrequency(getPresetFrequency(preset));
+  }
+
+  return getPresetFrequency(preset);
+}
+
+uint8_t GUI::getActivePreset() const {
+  return activePreset;
+}
+
+void GUI::updateActivePreset() {
+  if (frequency == getPresetFrequency(activePreset));
+  else if (frequency == getPresetFrequency(1)) activePreset = 1;
+  else if (frequency == getPresetFrequency(2)) activePreset = 2;
+  else if (frequency == getPresetFrequency(3)) activePreset = 3;
+  else if (frequency == getPresetFrequency(4)) activePreset = 4;
+  else activePreset = 0;
+
+  for (size_t i = 0; i < presetsBox->children.size(); ++i) {
+    presetsBox->children[i]->selected = (i + 1 == activePreset);
+  }
 }
 
 void GUI::setStationName(const String& name) {
@@ -120,34 +150,34 @@ void GUI::buildLayout() {
 
   buildInfo();
   buildVolume();
-  buildChannels();
+  buildPresets();
 
   upper->addChild(infoBox);
   upper->addChild(volumeBox);
 
   root->addChild(upper);
-  root->addChild(channels);
+  root->addChild(presetsBox);
 }
 
-void GUI::buildChannels() {
-  channels = new Container(Container::HORIZONTAL);
-  channels->setMargin(0, 0, 8);
+void GUI::buildPresets() {
+  presetsBox = new Container(Container::HORIZONTAL);
+  presetsBox->setMargin(0, 0, 8);
 
   const String bottomTexts[] = {"P1", "P2", "P3", "P4"};
   const uint8_t boxRadius = 12;
 
   for (uint8_t i = 0; i < 4; i++) {
-    Container* channelBox = new Container();
-    channelBox->border = true;
-    channelBox->borderRadius = boxRadius;
-    channelBox->setMargin(8, 4);
+    Container* presetBox = new Container();
+    presetBox->border = true;
+    presetBox->borderRadius = boxRadius;
+    presetBox->setMargin(8, 4);
 
-    TextElement* channelText = new TextElement(bottomTexts[i], TOP_CENTER);
-    channelBox->addChild(channelText);
-    channels->addChild(channelBox);
+    TextElement* presetText = new TextElement(bottomTexts[i], TOP_CENTER);
+    presetBox->addChild(presetText);
+    presetsBox->addChild(presetBox);
   }
 
-  channels->padding_bottom = -1 * (boxRadius + 6);
+  presetsBox->padding_bottom = -1 * (boxRadius + 6);
 }
 
 void GUI::buildInfo() {
@@ -240,12 +270,6 @@ void GUI::buildVolume() {
 
   // keep pointer to volume box so buildLayout can place it in the upper section
   this->volumeBox = volumeBox;
-}
-
-void GUI::applyChannelSelection() {
-  for (size_t i = 0; i < channels->children.size(); ++i) {
-    channels->children[i]->selected = (i + 1 == channelSelection);
-  }
 }
 
 void GUI::applyInfo() {

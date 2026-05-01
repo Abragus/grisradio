@@ -14,12 +14,14 @@ public:
   void begin();
   void draw();
 
-  void setChannel(uint8_t channel);
-  uint8_t getChannel() const;
-
   void setFrequency(float freq);
   void changeFrequency(float delta);
   float getFrequency() const;
+
+  bool setPresetFrequency(uint8_t preset, float freq);
+  float getPresetFrequency(uint8_t preset) const;
+  float activatePreset(uint8_t preset);
+  uint8_t getActivePreset() const;
 
   void setStationName(const String& name);
   String getStationName() const;
@@ -33,7 +35,7 @@ private:
   GxEPD2_BW<GxEPD2_290_T94_V2, 296U> display = GxEPD2_290_T94_V2(/*CS=*/5, /*DC=*/17, /*RST=*/16, /*BUSY=*/4);
 
   Container* root = nullptr;
-  Container* channels = nullptr;
+  Container* presetsBox = nullptr;
   Container* infoBox = nullptr;
   Container* volumeBox = nullptr;
   TextElement* frequencyText = nullptr;
@@ -42,7 +44,8 @@ private:
   TaskHandle_t displayWorkerHandle = NULL;
   bool needsRedraw = false;
 
-  uint8_t channelSelection = 1;
+  uint8_t activePreset = 0;
+  float presetFrequencies[4] = {0, 0, 0, 0};
   float frequency = 0.0;
   String stationName = "";
   uint8_t volume = 0;
@@ -51,12 +54,13 @@ private:
 
   static void displayWorker(void * param);
 
+  void updateActivePreset();
+
   void buildLayout();
-  void buildChannels();
+  void buildPresets();
   void buildInfo();
   void buildVolume();
 
-  void applyChannelSelection();
   void applyInfo();
   void applyVolume();
 };
