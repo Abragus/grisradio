@@ -1,14 +1,10 @@
-#ifndef GUI_H
-#define GUI_H
+#pragma once
 
 #include <GxEPD2_BW.h>
 #include <Fonts/FreeSans9pt7b.h>
 static const GFXfont *font = &FreeSans9pt7b;
-// #include "GxEPD2_display_selection.h"
 #include "elements.h"
 #include "alignment.h"
-
-// extern GxEPD2_BW<GxEPD2_290_T94_V2, 296U> display;
 
 class GUI {
 public:
@@ -22,8 +18,16 @@ public:
   uint8_t getChannel() const;
 
   void setFrequency(float freq);
+  void changeFrequency(float delta);
+  float getFrequency() const;
+
   void setStationName(const String& name);
-  void setVolume(uint8_t vol);
+  String getStationName() const;
+
+  void setVolume(int8_t vol);
+  void changeVolume(int8_t delta);
+  void toggleVolumeMute();
+  uint8_t getVolume() const;
 
 private:
   GxEPD2_BW<GxEPD2_290_T94_V2, 296U> display = GxEPD2_290_T94_V2(/*CS=*/5, /*DC=*/17, /*RST=*/16, /*BUSY=*/4);
@@ -35,11 +39,17 @@ private:
   TextElement* frequencyText = nullptr;
   TextElement* stationText = nullptr;
   ShapeElement* volumeLevel = nullptr;
+  TaskHandle_t displayWorkerHandle = NULL;
+  bool needsRedraw = false;
 
   uint8_t channelSelection = 1;
-  float frequency = 92.8;
-  String stationName = "Radio Trelleborg";
-  uint8_t volume = 65;
+  float frequency = 0.0;
+  String stationName = "";
+  uint8_t volume = 0;
+  uint8_t maxVolume = 15;
+  bool volumeMuted = false;
+
+  static void displayWorker(void * param);
 
   void buildLayout();
   void buildChannels();
@@ -50,5 +60,3 @@ private:
   void applyInfo();
   void applyVolume();
 };
-
-#endif // GUI_H

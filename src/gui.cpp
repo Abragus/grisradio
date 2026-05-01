@@ -1,7 +1,7 @@
 #include "gui.h"
 
 GUI::GUI() {
-  display.init(115200, true, 2, false);
+  display.init(115200, true, 2, false, SPI, SPISettings(20000000, MSBFIRST, SPI_MODE0));
   display.setRotation(3);
   display.setFont(font);
   display.setTextColor(GxEPD_BLACK);
@@ -16,14 +16,28 @@ void GUI::begin() {
   applyChannelSelection();
   applyInfo();
   applyVolume();
-  draw();
+  xTaskCreate(displayWorker, "displayWorker", 2048, (void*)this, 1, &displayWorkerHandle);
 }
 
 void GUI::draw() {
-  if (root) {
-    root->updateDisplay(display);
-    display.hibernate();
+  needsRedraw = true;
+  if (displayWorkerHandle != NULL) {
+      xTaskNotifyGive(displayWorkerHandle);
   }
+}
+
+void GUI::displayWorker(void* param) {
+    GUI* gui = (GUI*)param;
+
+    while (true) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        while (gui->needsRedraw) {
+            gui->needsRedraw = false;
+            gui->root->updateDisplay(gui->display);
+        }
+        gui->display.hibernate();
+    }
 }
 
 void GUI::setChannel(uint8_t channel) {
@@ -46,16 +60,47 @@ void GUI::setFrequency(float freq) {
   draw();
 }
 
+void GUI::changeFrequency(float delta) {
+  setFrequency(frequency + delta);
+}
+
+float GUI::getFrequency() const {
+  return frequency;
+}
+
 void GUI::setStationName(const String& name) {
   stationName = name;
   applyInfo();
   draw();
 }
 
-void GUI::setVolume(uint8_t vol) {
-  volume = (vol > 100) ? 100 : vol;
+String GUI::getStationName() const {
+  return stationName;
+}
+
+void GUI::setVolume(int8_t vol) {
+  volume = (vol > maxVolume) ? maxVolume : (vol < 0) ? 0 : vol;
   applyVolume();
   draw();
+}
+
+void GUI::changeVolume(int8_t delta) {
+  if (volumeMuted) {
+    volumeMuted = false;
+    setVolume(delta);
+    return;
+  }
+  setVolume(volume + delta);
+}
+
+void GUI::toggleVolumeMute() {
+  volumeMuted = !volumeMuted;
+  applyVolume();
+  draw();
+}
+
+uint8_t GUI::getVolume() const {
+  return (volumeMuted ? 0 : volume);
 }
 
 void GUI::buildLayout() {
@@ -67,11 +112,11 @@ void GUI::buildLayout() {
   root->w = display.width();
   root->h = display.height();
   root->setMargin(6);
-  root->childSizes = {6, 1};
+  root->childSizes = {7, 1};
 
   Container* upper = new Container(Container::HORIZONTAL);
   upper->setMargin(0, 0, 6);
-  upper->childSizes = {7, 2};
+  upper->childSizes = {7.1, 2};
 
   buildInfo();
   buildVolume();
@@ -110,6 +155,8 @@ void GUI::buildInfo() {
   infoBox->border = true;
   infoBox->borderRadius = 20;
   infoBox->setMargin(12);
+  infoBox->margin_inner = 4;
+  infoBox->childSizes = {1, 3};
 
   frequencyText = new TextElement(String(frequency, 1) + " MHz", TOP_LEFT);
   stationText = new TextElement(stationName, TOP_LEFT);
@@ -132,10 +179,25 @@ void GUI::buildVolume() {
 
   volumeLevel = new ShapeElement();
   volumeLevel->drawFunc = [this](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
-    uint8_t barMargin = 3;
-    Size barSize = {(uint16_t)(w - 2 * barMargin), (uint16_t)((h - 2 * barMargin) * (volume / 100.0f))};
+    if (getVolume() == 0) return;
+
+    uint8_t barMargin = 3, fillet = 14 - barMargin;
+    Size barSize = {(uint16_t)(w - 2 * barMargin), (uint16_t)((h - 2 * barMargin) * (volume / (float)maxVolume))};
+    uint8_t cutoffHeight = 0, minOffset = 6;
+    
+    // Detect low volume, draw white box over top part of volume bar to retain correct fillet shape
+    if (barSize.h <= 2 * fillet - minOffset) {
+      cutoffHeight = 2 * fillet + 1 - minOffset - barSize.h;
+      barSize.h = 2 * fillet + 1 - minOffset;
+    }
+    
     Point startPoint = alignInsideBox(BOTTOM_CENTER, {x, y, w, h}, barSize, barMargin);
-    display.fillRoundRect(startPoint.x, startPoint.y - barMargin, barSize.w, barSize.h, 14 - barMargin, GxEPD_BLACK);
+    
+    display.fillRoundRect(startPoint.x, startPoint.y - barMargin, barSize.w, barSize.h, fillet, GxEPD_BLACK);
+
+    if (cutoffHeight > 0) {
+      display.fillRect(startPoint.x, startPoint.y - barMargin, barSize.w, cutoffHeight, GxEPD_WHITE);
+    }
   };
 
   volumeBar->addChild(volumeLevel);
