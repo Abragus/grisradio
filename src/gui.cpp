@@ -136,6 +136,10 @@ void GUI::toggleVolumeMute() {
   draw();
 }
 
+bool GUI::isVolumeMuted() const {
+  return volumeMuted;
+}
+
 uint8_t GUI::getVolume() const {
   return (volumeMuted ? 0 : volume);
 }
