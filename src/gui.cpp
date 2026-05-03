@@ -157,7 +157,7 @@ void GUI::buildLayout() {
 
   Container* upper = new Container(Container::HORIZONTAL);
   upper->setMargin(0, 0, 6);
-  upper->childSizes = {7.1, 2};
+  upper->childSizes = {10, 1};
 
   buildInfo();
   buildVolume();
@@ -211,12 +211,12 @@ void GUI::buildVolume() {
   volumeBox->border = true;
   volumeBox->borderRadius = 20;
   volumeBox->setMargin(6);
-  volumeBox->padding_right = -1 * (volumeBox->borderRadius + 6);
-  volumeBox->childSizes = {1, 2};
+  volumeBox->padding_right = -1 * (volumeBox->borderRadius + volumeBox->margin_h);
 
   Container* volumeBar = new Container();
   volumeBar->border = true;
   volumeBar->borderRadius = 14;
+  volumeBar->padding_right = volumeBox->borderRadius - volumeBox->margin_h;
 
   volumeLevel = new ShapeElement();
   volumeLevel->drawFunc = [this](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
@@ -244,42 +244,6 @@ void GUI::buildVolume() {
   volumeBar->addChild(volumeLevel);
   volumeBox->addChild(volumeBar);
 
-  Container* volumeIcons = new Container(Container::VERTICAL);
-  volumeIcons->setMargin(0, 0, volumeBox->margin_inner);
-
-  Container* plusButton = new Container();
-  plusButton->border = true;
-  plusButton->borderRadius = 14;
-  plusButton->setMargin(8);
-  ShapeElement* plusSymbol = new ShapeElement();
-  plusSymbol->drawFunc = [](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
-    const int16_t lineLength = min((int16_t)w, (int16_t)h);
-    const int8_t lineWidth = 3;
-    Frame hLine = {alignInsideBox(MIDDLE_LEFT, {x, y, w, h}, Size(lineLength, lineWidth), 0), Size(lineLength, lineWidth)};
-    Frame vLine = {alignInsideBox(MIDDLE_CENTER, hLine, Size(lineWidth, lineLength), 0), Size(lineWidth, lineLength)};
-    display.fillRoundRect(hLine.x, hLine.y, hLine.w, hLine.h, lineWidth, GxEPD_BLACK);
-    display.fillRoundRect(vLine.x, vLine.y, vLine.w, vLine.h, lineWidth, GxEPD_BLACK);
-  };
-  plusButton->addChild(plusSymbol);
-  volumeIcons->addChild(plusButton);
-
-  Container* minusButton = new Container();
-  minusButton->border = true;
-  minusButton->borderRadius = 14;
-  minusButton->setMargin(8);
-  ShapeElement* minusSymbol = new ShapeElement();
-  minusSymbol->drawFunc = [](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
-    const int16_t lineLength = min((int16_t)w, (int16_t)h);
-    const int8_t lineWidth = 3;
-    Frame hLine = {alignInsideBox(MIDDLE_LEFT, {x, y, w, h}, Size(lineLength, lineWidth), 0), Size(lineLength, lineWidth)};
-    display.fillRoundRect(hLine.x, hLine.y, lineLength, lineWidth, lineWidth, GxEPD_BLACK);
-  };
-  minusButton->addChild(minusSymbol);
-  volumeIcons->addChild(minusButton);
-
-  volumeBox->addChild(volumeIcons);
-
-  // keep pointer to volume box so buildLayout can place it in the upper section
   this->volumeBox = volumeBox;
 }
 
