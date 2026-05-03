@@ -58,11 +58,17 @@ bool GUI::setPresetFrequency(uint8_t preset, float freq) {
   if (preset < 1 || preset > 4) return false;
   
   presetFrequencies[preset - 1] = freq;
+  updateActivePreset();
   
-  if (preset == activePreset) {
-    activePreset = 0;
-  }
   return true;
+}
+
+bool GUI::setPresetFrequency(uint8_t preset) {
+  bool success = setPresetFrequency(preset, frequency);
+  Serial.printf("Set preset %d frequency to %.1f MHz\n", preset, frequency);
+  activePreset = 0;
+  activatePreset(preset);
+  return success;
 }
 
 float GUI::getPresetFrequency(uint8_t preset) const {
@@ -74,6 +80,7 @@ float GUI::activatePreset(uint8_t preset) {
   if (preset < 1 || preset > 4) return -1;
 
   if (activePreset != preset) {
+    
     activePreset = preset;
     setFrequency(getPresetFrequency(preset));
   }

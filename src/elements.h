@@ -1,5 +1,4 @@
-#ifndef ELEMENTS_H
-#define ELEMENTS_H
+#pragma once
 
 #include <vector>
 #include <numeric>
@@ -73,5 +72,3 @@ public:
 
   void draw(Adafruit_GFX& display, int color = GxEPD_BLACK) override;
 };
-
-#endif

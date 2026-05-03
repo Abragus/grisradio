@@ -19,6 +19,7 @@ public:
   float getFrequency() const;
 
   bool setPresetFrequency(uint8_t preset, float freq);
+  bool setPresetFrequency(uint8_t preset);
   float getPresetFrequency(uint8_t preset) const;
   float activatePreset(uint8_t preset);
   uint8_t getActivePreset() const;
