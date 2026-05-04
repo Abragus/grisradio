@@ -1,8 +1,11 @@
 #include <Arduino.h>
 
-#define DEBUG false
+#define DEBUG true
 
 #include "gui.h"
+#include "radio.h"
+
+Radio radio = Radio();
 
 void setup() {
 
@@ -11,7 +14,7 @@ void setup() {
     while (!Serial);
     Serial.println("DEBUG enabled");
   }
-
+  /*
   GUI gui = GUI();
   gui.begin();
   
@@ -20,8 +23,13 @@ void setup() {
   gui.setFrequency(92.8);
   gui.setStationName("Radio Trelleborg");
   gui.setVolume(65);
-  gui.draw();
+  gui.draw(); */
+
+  radio.setup(7);
+  radio.setFrequency(10700);
 }
 
-void loop() {}
+void loop() {
+  radio.print();
+}
 
