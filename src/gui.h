@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pinin.h" 
+#include <SPI.h>
 #include <GxEPD2_BW.h>
 #include <Fonts/FreeSans9pt7b.h>
 static const GFXfont *font = &FreeSans9pt7b;

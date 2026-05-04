@@ -1,6 +1,8 @@
 #include "gui.h"
+#include "pinin.h"
 
 GUI::GUI() {
+  SPI.begin(DISPLAY_CLK, -1, DISPLAY_DIN, DISPLAY_CS);
   display.init(115200, true, 2, false, SPI, SPISettings(20000000, MSBFIRST, SPI_MODE0));
   display.setRotation(3);
   display.setFont(font);
