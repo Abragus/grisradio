@@ -36,7 +36,7 @@ public:
   uint8_t getVolume() const;
 
 private:
-  GxEPD2_BW<GxEPD2_290_T94_V2, 296U> display = GxEPD2_290_T94_V2(/*CS=*/5, /*DC=*/17, /*RST=*/16, /*BUSY=*/4);
+  GxEPD2_BW<GxEPD2_290_T94_V2, 296U> display = GxEPD2_290_T94_V2(/*CS=*/DISPLAY_CS, /*DC=*/DISPLAY_DC, /*RST=*/DISPLAY_RST, /*BUSY=*/DISPLAY_BUSY);
 
   Container* root = nullptr;
   Container* presetsBox = nullptr;
