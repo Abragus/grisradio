@@ -31,6 +31,7 @@ public:
 
   void setVolume(int8_t vol);
   void changeVolume(int8_t delta);
+  void setVolumeMute(bool mute);
   void toggleVolumeMute();
   bool isVolumeMuted() const;
   uint8_t getVolume() const;

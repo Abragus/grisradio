@@ -132,6 +132,12 @@ void GUI::changeVolume(int8_t delta) {
   setVolume(volume + delta);
 }
 
+void GUI::setVolumeMute(bool mute) {
+  volumeMuted = mute;
+  applyVolume();
+  draw();
+}
+
 void GUI::toggleVolumeMute() {
   volumeMuted = !volumeMuted;
   applyVolume();
@@ -204,16 +210,18 @@ void GUI::buildInfo() {
   frequencyText = new TextElement(String(frequency, 1) + " MHz", TOP_LEFT);
   stationText = new TextElement(stationName, TOP_LEFT);
 
+
   infoBox->addChild(frequencyText);
   infoBox->addChild(stationText);
 }
 
 void GUI::buildVolume() {
-  Container* volumeBox = new Container(Container::HORIZONTAL);
+  Container* volumeBox = new Container(Container::VERTICAL);
   volumeBox->border = true;
   volumeBox->borderRadius = 20;
-  volumeBox->setMargin(6);
+  volumeBox->setMargin(6, 6, 4);
   volumeBox->padding_right = -1 * (volumeBox->borderRadius + volumeBox->margin_h);
+  volumeBox->childSizes = {4, 1};
 
   Container* volumeBar = new Container();
   volumeBar->border = true;
@@ -243,8 +251,52 @@ void GUI::buildVolume() {
     }
   };
 
+  ShapeElement* volumeIcon = new ShapeElement();
+  volumeIcon->padding_right = volumeBar->padding_right;
+  volumeIcon->drawFunc = [this](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
+    float h_to_w_ratio = 0.8;
+    int16_t minHeight = (int16_t)(w * h_to_w_ratio < h) ? w * h_to_w_ratio : h;
+    minHeight += (minHeight + 1) % 2;
+    Size size = {(uint16_t)(minHeight / h_to_w_ratio), (uint16_t)(minHeight)};
+    Point corner = alignInsideBox(MIDDLE_CENTER, {x, y, w, h}, size, 0);
+
+
+    uint8_t rounding = 1;
+    Point center = {static_cast<int16_t>(corner.x + size.w / 2), static_cast<int16_t>(corner.y + size.h / 2)};
+    Size rect = {static_cast<uint16_t>(size.w / 3), static_cast<uint16_t>(size.h * 0.5)};
+    rect.h += (rect.h + 1) % 2;
+    Point rectCorner = alignInsideBox(MIDDLE_LEFT, {corner.x, corner.y, size.w, size.h}, rect, 0);
+    Size triangle = {static_cast<uint16_t>(size.w * 0.5), static_cast<uint16_t>(size.h)};
+    Point triCorner = {corner.x + size.w * 0.05, center.y};
+
+    display.fillRoundRect(rectCorner.x, rectCorner.y, rect.w, rect.h, rounding, GxEPD_BLACK);
+
+    for (int16_t i = 0; i <= (triangle.h) / 2; i++) {
+      int8_t triangleRounding = (i == (triangle.h) / 2) ? 0 : -1;
+      display.drawLine(triCorner.x + 1 + i, triCorner.y - i + triangleRounding, triCorner.x + 1 + i, triCorner.y + i - triangleRounding, GxEPD_BLACK);
+    }
+
+    if (isVolumeMuted()) {
+      for (uint8_t i = 0; i <= 2; i++) {
+        uint16_t color = (i == 0 || i == 3) ? GxEPD_WHITE : GxEPD_BLACK;
+        display.drawLine(corner.x + i, corner.y + size.h * 0.1, corner.x + 1 + i + size.h * 0.8 , corner.y + size.h * 0.9, color);
+      }
+    } else {
+      uint8_t waveCount = std::ceil((getVolume() / (float)maxVolume) * 3);
+      uint8_t soundWaveDistance = size.w * 0.19;
+      uint8_t soundWaveCenterOffset = size.h * 0.2;
+      for (int8_t i = 2; i >= 3 - waveCount; i--) {
+        uint8_t angle = 40 + 1 * i;
+        for (int8_t j = 0; j <= (soundWaveDistance >= 6 ? 1 : 0); j++) {
+          drawArc(display, center.x - soundWaveCenterOffset, center.y, size.w / 2  + soundWaveCenterOffset - i * soundWaveDistance - j, -1 * angle, angle, GxEPD_BLACK);
+        }
+      }
+    }
+  };
+
   volumeBar->addChild(volumeLevel);
   volumeBox->addChild(volumeBar);
+  volumeBox->addChild(volumeIcon);
 
   this->volumeBox = volumeBox;
 }

@@ -1,4 +1,5 @@
 #include "elements.h"
+#include <math.h>
 
 #ifndef DEBUG
 #define DEBUG false
@@ -167,4 +168,59 @@ void ShapeElement::draw(Adafruit_GFX& display, int color) {
     }
 
     if (drawFunc) drawFunc(display, x, y, w, h);
+}
+
+void drawArc(Adafruit_GFX& display, int16_t x0, int16_t y0, int16_t r,
+                           int16_t startAngle, int16_t endAngle, uint16_t color) {
+
+  // Normalize angles to 0-360
+  while (startAngle < 0) startAngle += 360;
+  while (endAngle < 0) endAngle += 360;
+  if (endAngle < startAngle) endAngle += 360;
+
+  int16_t f = 1 - r;
+  int16_t ddF_x = 1;
+  int16_t ddF_y = -2 * r;
+  int16_t x = 0;
+  int16_t y = r;
+
+  auto checkAndPlot = [&](int16_t px, int16_t py) {
+    // Calculate angle of the current pixel relative to center
+    // We use float here, but atan2 is generally well-optimized
+    float angle = atan2(py - y0, px - x0) * 180 / M_PI;
+    if (angle < 0) angle += 360;
+
+    // Account for wrap-around (e.g., arc from 350 to 10 degrees)
+    if ((angle >= startAngle && angle <= endAngle) ||
+        (angle + 360 >= startAngle && angle + 360 <= endAngle)) {
+      display.writePixel(px, py, color);
+    }
+  };
+
+  // Draw the cardinal points
+  checkAndPlot(x0, y0 - r);
+  checkAndPlot(x0, y0 + r);
+  checkAndPlot(x0 + r, y0);
+  checkAndPlot(x0 - r, y0);
+
+  while (x < y) {
+    if (f >= 0) {
+      y--;
+      ddF_y += 2;
+      f += ddF_y;
+    }
+    x++;
+    ddF_x += 2;
+    f += ddF_x;
+
+    // Check all 8 symmetrical points
+    checkAndPlot(x0 + x, y0 + y);
+    checkAndPlot(x0 - x, y0 + y);
+    checkAndPlot(x0 + x, y0 - y);
+    checkAndPlot(x0 - x, y0 - y);
+    checkAndPlot(x0 + y, y0 + x);
+    checkAndPlot(x0 - y, y0 + x);
+    checkAndPlot(x0 + y, y0 - x);
+    checkAndPlot(x0 - y, y0 - x);
+  }
 }

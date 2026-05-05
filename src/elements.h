@@ -72,3 +72,6 @@ public:
 
   void draw(Adafruit_GFX& display, int color = GxEPD_BLACK) override;
 };
+
+void drawArc(Adafruit_GFX& display, int16_t x0, int16_t y0, int16_t r,
+                           int16_t startAngle, int16_t endAngle, uint16_t color);
