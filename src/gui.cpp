@@ -245,7 +245,7 @@ void GUI::buildVolume() {
 
   volumeLevel = new ShapeElement();
   volumeLevel->drawFunc = [this](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
-    if (getVolume() == 0) return;
+    if (volume == 0) return;
 
     uint8_t barMargin = 3, fillet = 14 - barMargin;
     Size barSize = {(uint16_t)(w - 2 * barMargin), (uint16_t)((h - 2 * barMargin) * (volume / (float)maxVolume))};
@@ -259,7 +259,11 @@ void GUI::buildVolume() {
     
     Point startPoint = alignInsideBox(BOTTOM_CENTER, {x, y, w, h}, barSize, barMargin);
     
-    display.fillRoundRect(startPoint.x, startPoint.y - barMargin, barSize.w, barSize.h, fillet, GxEPD_BLACK);
+    if (!isVolumeMuted()) {
+      display.fillRoundRect(startPoint.x, startPoint.y - barMargin, barSize.w, barSize.h, fillet, GxEPD_BLACK);
+    } else if (volume >= maxVolume / 3) {
+      display.drawRoundRect(startPoint.x, startPoint.y - barMargin, barSize.w, barSize.h, fillet, GxEPD_BLACK);
+    }
 
     if (cutoffHeight > 0) {
       display.fillRect(startPoint.x, startPoint.y - barMargin, barSize.w, cutoffHeight, GxEPD_WHITE);
