@@ -13,9 +13,15 @@ public:
     void setVolume( uint8_t volume );
     void setVolumeUp();
     void setVolumeDown();
+    void setMute( bool value );
     uint16_t getFrequency();
     void setFrequency(uint16_t frequency);
     uint16_t getDeviceId();
-    char * getRdsTime();
+    bool getRdsReady();
+    char * getRdsLocalTime();
+    char * getRdsProgramInformation();
+    char * getRdsStationInformation();
+    char * getRdsStationName();
+    bool getRdsAllData(char **stationName, char **stationInformation, char **programInformation, char **utcTime);
     void print();
 };

@@ -6,7 +6,7 @@ void Radio::setup() {
     rx.setVolume(1);
     rx.setMono(true);
     rx.setRDS(true);
-    rx.setRdsFifo(false);
+    rx.setRdsFifo(true);
 }
 
 void Radio::seekDown() {
@@ -36,11 +36,17 @@ void Radio::setVolumeDown() {
     rx.setVolumeDown();
 }
 
+void Radio::setMute(bool value) {
+    rx.setMute(value); 
+}
+
 uint16_t Radio::getFrequency() {
     return rx.getFrequency();
 }
 
 void Radio::setFrequency(uint16_t frequency) {
+    rx.clearRdsFifo();
+    rx.clearRdsBuffer();
     rx.setFrequency(frequency);
 }
 
@@ -48,13 +54,30 @@ uint16_t Radio::getDeviceId() {
     return rx.getDeviceId();
 }
 
-char * Radio::getRdsTime() {
-    if (!rx.getRdsReady()) {
-        return "RDS not ready";
-    }
-
-    return rx.getRdsTime();
+bool Radio::getRdsReady() {
+    return rx.getRdsReady();
 }
+
+char * Radio::getRdsLocalTime() {
+    return rx.getRdsLocalTime();
+}
+
+char * Radio::getRdsProgramInformation() {
+    return rx.getRdsProgramInformation();
+}
+
+char * Radio::getRdsStationInformation() {
+    return rx.getRdsStationInformation();
+}
+
+char * Radio::getRdsStationName() {
+    return rx.getRdsStationName();
+}
+
+bool Radio::getRdsAllData(char **stationName, char **stationInformation, char **programInformation, char **utcTime) {
+    return rx.getRdsAllData(stationName, stationInformation, programInformation, utcTime);
+}
+
 
 void Radio::print() {
     //Serial.println(rx.getDirectRegister(REG0A).raw);
