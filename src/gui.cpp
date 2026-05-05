@@ -192,7 +192,7 @@ void GUI::buildPresets() {
   presetsBox = new Container(Container::HORIZONTAL);
   presetsBox->setMargin(0, 0, 8);
 
-  const String bottomTexts[] = {"P1", "P2", "P3", "P4"};
+  const String bottomTexts[] = {"CH1", "CH2", "CH3", "CH4"};
   const uint8_t boxRadius = 12;
 
   for (uint8_t i = 0; i < 4; i++) {
