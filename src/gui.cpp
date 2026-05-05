@@ -277,8 +277,22 @@ void GUI::buildVolume() {
     int16_t minHeight = (int16_t)(w * h_to_w_ratio < h) ? w * h_to_w_ratio : h;
     minHeight += (minHeight + 1) % 2;
     Size size = {(uint16_t)(minHeight / h_to_w_ratio), (uint16_t)(minHeight)};
-    Point corner = alignInsideBox(MIDDLE_CENTER, {x, y, w, h}, size, 0);
 
+    const uint8_t maxWaves = 3;
+    uint8_t waveCount = std::ceil((getVolume() / (float)maxVolume) * 3);
+    uint8_t soundWaveDistance = size.w * 0.19;
+    uint8_t soundWaveCenterOffset = size.h * 0.2;
+
+    uint8_t muteLineWidth = 2;
+    int16_t actualWidth;
+
+    if (isVolumeMuted()) {
+      actualWidth = 1 + muteLineWidth + size.h * 0.8;
+    } else {
+      actualWidth = size.w - (maxWaves - waveCount) * soundWaveDistance; // Simplified sound wave width calculation from drawArc parameters
+    }
+
+    Point corner = alignInsideBox(MIDDLE_CENTER, {x, y, w, h}, {actualWidth, size.h}, 0);
 
     uint8_t rounding = 1;
     Point center = {static_cast<int16_t>(corner.x + size.w / 2), static_cast<int16_t>(corner.y + size.h / 2)};
@@ -296,15 +310,12 @@ void GUI::buildVolume() {
     }
 
     if (isVolumeMuted()) {
-      for (uint8_t i = 0; i <= 2; i++) {
-        uint16_t color = (i == 0 || i == 3) ? GxEPD_WHITE : GxEPD_BLACK;
-        display.drawLine(corner.x + i, corner.y + size.h * 0.1, corner.x + 1 + i + size.h * 0.8 , corner.y + size.h * 0.9, color);
+      for (uint8_t i = 0; i <= muteLineWidth; i++) {
+        uint16_t color = (i == 0) ? GxEPD_WHITE : GxEPD_BLACK;
+        display.drawLine(corner.x + i, corner.y + size.h * 0.1, corner.x + 1 + i + size.h * 0.8, corner.y + size.h * 0.9, color);
       }
     } else {
-      uint8_t waveCount = std::ceil((getVolume() / (float)maxVolume) * 3);
-      uint8_t soundWaveDistance = size.w * 0.19;
-      uint8_t soundWaveCenterOffset = size.h * 0.2;
-      for (int8_t i = 2; i >= 3 - waveCount; i--) {
+      for (int8_t i = 2; i >= maxWaves - waveCount; i--) {
         uint8_t angle = 40 + 1 * i;
         for (int8_t j = 0; j <= (soundWaveDistance >= 6 ? 1 : 0); j++) {
           drawArc(display, center.x - soundWaveCenterOffset, center.y, size.w / 2  + soundWaveCenterOffset - i * soundWaveDistance - j, -1 * angle, angle, GxEPD_BLACK);
