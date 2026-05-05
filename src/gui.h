@@ -28,6 +28,9 @@ public:
 
   void setStationName(const String& name);
   String getStationName() const;
+  
+  void setTime(const String& time);
+  String getTime() const;
 
   void setVolume(int8_t vol);
   void changeVolume(int8_t delta);
@@ -44,6 +47,7 @@ private:
   Container* infoBox = nullptr;
   Container* volumeBox = nullptr;
   TextElement* frequencyText = nullptr;
+  TextElement* timeText = nullptr;
   TextElement* stationText = nullptr;
   ShapeElement* volumeLevel = nullptr;
   TaskHandle_t displayWorkerHandle = NULL;
@@ -53,6 +57,7 @@ private:
   float presetFrequencies[4] = {0, 0, 0, 0};
   float frequency = 0.0;
   String stationName = "";
+  String time = "";
   uint8_t volume = 0;
   uint8_t maxVolume = 15;
   bool volumeMuted = false;

@@ -117,6 +117,16 @@ String GUI::getStationName() const {
   return stationName;
 }
 
+void GUI::setTime(const String& time) {
+  this->time = time;
+  applyInfo();
+  draw();
+}
+
+String GUI::getTime() const {
+  return time;
+}
+
 void GUI::setVolume(int8_t vol) {
   volume = (vol > maxVolume) ? maxVolume : (vol < 0) ? 0 : vol;
   applyVolume();
@@ -209,9 +219,14 @@ void GUI::buildInfo() {
 
   frequencyText = new TextElement(String(frequency, 1) + " MHz", TOP_LEFT);
   stationText = new TextElement(stationName, TOP_LEFT);
+  timeText = new TextElement(time, TOP_RIGHT);
 
-
-  infoBox->addChild(frequencyText);
+  Container* topBar = new Container(Container::HORIZONTAL);
+  topBar->childSizes = {1, 1};
+  topBar->addChild(frequencyText);
+  topBar->addChild(timeText);
+  
+  infoBox->addChild(topBar);
   infoBox->addChild(stationText);
 }
 
@@ -267,7 +282,7 @@ void GUI::buildVolume() {
     rect.h += (rect.h + 1) % 2;
     Point rectCorner = alignInsideBox(MIDDLE_LEFT, {corner.x, corner.y, size.w, size.h}, rect, 0);
     Size triangle = {static_cast<uint16_t>(size.w * 0.5), static_cast<uint16_t>(size.h)};
-    Point triCorner = {corner.x + size.w * 0.05, center.y};
+    Point triCorner = {static_cast<int16_t>(corner.x + size.w * 0.05), center.y};
 
     display.fillRoundRect(rectCorner.x, rectCorner.y, rect.w, rect.h, rounding, GxEPD_BLACK);
 
@@ -304,6 +319,7 @@ void GUI::buildVolume() {
 void GUI::applyInfo() {
   if (frequencyText) frequencyText->text = String(frequency, 1) + " MHz";
   if (stationText) stationText->text = stationName;
+  if (timeText) timeText->text = time;
 }
 
 void GUI::applyVolume() {
