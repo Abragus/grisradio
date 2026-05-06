@@ -16,6 +16,8 @@ public:
     void setMute( bool value );
     uint16_t getFrequency();
     void setFrequency(uint16_t frequency);
+    void setFrequencyUp();
+    void setFrequencyDown();
     uint16_t getDeviceId();
     bool getRdsReady();
     char * getRdsLocalTime();

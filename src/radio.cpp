@@ -7,6 +7,7 @@ void Radio::setup() {
     rx.setMono(true);
     rx.setRDS(true);
     rx.setRdsFifo(true);
+    rx.setNewDemodulateMethod(true);
 }
 
 void Radio::seekDown() {
@@ -48,6 +49,18 @@ void Radio::setFrequency(uint16_t frequency) {
     rx.clearRdsFifo();
     rx.clearRdsBuffer();
     rx.setFrequency(frequency);
+}
+
+void Radio::setFrequencyUp() {
+    rx.clearRdsFifo();
+    rx.clearRdsBuffer();
+    rx.setFrequencyUp();
+}
+
+void Radio::setFrequencyDown() {
+    rx.clearRdsFifo();
+    rx.clearRdsBuffer();
+    rx.setFrequencyDown();
 }
 
 uint16_t Radio::getDeviceId() {

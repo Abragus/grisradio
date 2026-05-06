@@ -5,7 +5,7 @@
 #include "radio.h"
 
 #define DEBUG false
-#define FIFOQueueLength 10
+#define FIFOQueueLength 15
 
 GUI gui;
 ButtonManager buttonManager;
@@ -36,13 +36,31 @@ void setVolumeDown() {
   radio.setVolume(gui.getVolume());
 }
 
-void setFrequency(uint16_t frequency) {
-  radio.setFrequency(frequency);
-  gui.setFrequency(frequency/100);
+void clearRDS() {
   stationName.clear();
   lastStationName = "";
   programInformation.clear();
   lastProgramInformation = "";
+
+  gui.setStationName("");
+}
+
+void setFrequency(uint16_t frequency) {
+  radio.setFrequency(frequency);
+  gui.setFrequency(frequency/100.0);
+  clearRDS();
+}
+
+void setFrequencyUp() {
+  radio.setFrequencyUp();
+  gui.setFrequency(radio.getFrequency()/100.0);
+  clearRDS();
+}
+
+void setFrequencyDown() {
+  radio.setFrequencyDown();
+  gui.setFrequency(radio.getFrequency()/100.0);
+  clearRDS();
 }
 
 void activatePreset(uint8_t preset) {
@@ -109,13 +127,14 @@ void setup() {
   }
   
   gui.begin();
+  delay(250);
   radio.setup();
   gui.setVolume(radio.getVolume());
-  gui.setPresetFrequency(1, 101.4);
-  gui.setPresetFrequency(2, 88.8);
-  gui.setPresetFrequency(3, 107);
-  gui.setPresetFrequency(4, 87.9);
-  activatePreset(3);
+  gui.setPresetFrequency(1, 88.8);
+  gui.setPresetFrequency(2, 107);
+  gui.setPresetFrequency(3, 97.0);
+  gui.setPresetFrequency(4, 101.4);
+  activatePreset(1);
 
   // PinID, Callback
   buttonManager.actions = {
@@ -124,8 +143,10 @@ void setup() {
     {{VOLUME_DOWN, AceButton::kEventPressed}, []() { setVolumeDown(); }},
     {{VOLUME_DOWN, AceButton::kEventRepeatPressed}, []() { setVolumeDown(); }},
     {{VOLUME_MUTE, AceButton::kEventClicked}, []() { toggleMute(); }},
-    {{FREQUENCY_UP, AceButton::kEventPressed}, []() { seekUp(); }},
-    {{FREQUENCY_DOWN, AceButton::kEventPressed}, []() { seekDown(); }},
+    {{FREQUENCY_UP, AceButton::kEventPressed}, []() { setFrequencyUp(); }},
+    {{FREQUENCY_UP, AceButton::kEventRepeatPressed}, []() { setFrequencyUp(); }},
+    {{FREQUENCY_DOWN, AceButton::kEventPressed}, []() { setFrequencyDown(); }},
+    {{FREQUENCY_DOWN, AceButton::kEventRepeatPressed}, []() { setFrequencyDown(); }},
     {{PRESET_1, AceButton::kEventClicked}, []() { activatePreset(1); }},
     {{PRESET_2, AceButton::kEventClicked}, []() { activatePreset(2); }},
     {{PRESET_3, AceButton::kEventClicked}, []() { activatePreset(3); }},
