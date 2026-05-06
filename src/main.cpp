@@ -4,7 +4,7 @@
 #include "gui.h"
 #include "radio.h"
 
-#define DEBUG true
+#define DEBUG false
 #define FIFOQueueLength 10
 
 GUI gui;
@@ -14,6 +14,7 @@ Radio radio;
   String bestStationName, lastStationName, bestProgramInformation, lastProgramInformation, localTime, newLocalTime;
   std::deque<String> programInformation, stationName;
   bool rdsUpdate;
+  uint16_t battery, newBattery;
 
 void setVolume(uint8_t volume) {
   if (volume > 15) {
@@ -39,7 +40,9 @@ void setFrequency(uint16_t frequency) {
   radio.setFrequency(frequency);
   gui.setFrequency(frequency/100);
   stationName.clear();
+  lastStationName = "";
   programInformation.clear();
+  lastProgramInformation = "";
 }
 
 void activatePreset(uint8_t preset) {
@@ -144,6 +147,18 @@ void loop() {
     newLocalTime = radio.getRdsLocalTime();
     bestProgramInformation = "";
     bestStationName = "";
+    newBattery = 0;
+
+    for (size_t i = 0; i < 20; i++) {
+      newBattery += analogRead(A13);
+    }
+
+    newBattery = newBattery/10; // newBattery/20 * 2
+    if (newBattery < 4219) {
+      newBattery = map(newBattery, 3599, 4219, 0, 20);
+    } else {
+      newBattery = map(newBattery, 4219, 5150, 20, 100);
+    }
 
     programInformation.push_front(cleanString(radio.getRdsProgramInformation()));
     if(programInformation.size() > FIFOQueueLength) {
@@ -175,11 +190,15 @@ void loop() {
       localTime = newLocalTime;
       gui.setTime(localTime);
     }
+    
+    if(newBattery != battery) {
+      battery = newBattery;
+      gui.setBatteryLevel(battery);
+    }
 
     if(rdsUpdate) {
       lastStationName = bestStationName;
       lastProgramInformation = bestProgramInformation;
-      Serial.println(bestStationName + "\n" + bestProgramInformation);
       gui.setStationName(bestStationName + "\n" + bestProgramInformation);
       rdsUpdate = false;
     }
