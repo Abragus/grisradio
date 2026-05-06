@@ -39,6 +39,9 @@ public:
   bool isVolumeMuted() const;
   uint8_t getVolume() const;
 
+  void setBatteryLevel(float level);
+  uint8_t getBatteryLevel() const;
+
 private:
   GxEPD2_BW<GxEPD2_290_T94_V2, 296U> display = GxEPD2_290_T94_V2(/*CS=*/DISPLAY_CS, /*DC=*/DISPLAY_DC, /*RST=*/DISPLAY_RST, /*BUSY=*/DISPLAY_BUSY);
 
@@ -61,7 +64,8 @@ private:
   uint8_t volume = 0;
   uint8_t maxVolume = 15;
   bool volumeMuted = false;
-
+  uint8_t batteryLevel = 0;
+  
   static void displayWorker(void * param);
 
   void updateActivePreset();

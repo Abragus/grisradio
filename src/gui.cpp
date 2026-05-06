@@ -162,6 +162,16 @@ uint8_t GUI::getVolume() const {
   return (volumeMuted ? 0 : volume);
 }
 
+void GUI::setBatteryLevel(float level) {
+  batteryLevel = static_cast<uint8_t>((level > 100) ? 100 : (level < 0) ? 0 : level);
+  applyInfo();
+  draw();
+}
+
+uint8_t GUI::getBatteryLevel() const {
+  return batteryLevel;
+}
+
 void GUI::buildLayout() {
   delete root;
 
@@ -213,17 +223,41 @@ void GUI::buildInfo() {
   infoBox = new Container(Container::VERTICAL);
   infoBox->border = true;
   infoBox->borderRadius = 20;
-  infoBox->setMargin(12);
-  infoBox->margin_inner = 4;
-  infoBox->childSizes = {1, 3};
+  infoBox->setMargin(10);
+  infoBox->margin_inner = 8;
+  infoBox->childSizes = {1, 4};
 
   frequencyText = new TextElement(String(frequency, 1) + " MHz", TOP_LEFT);
   stationText = new TextElement(stationName, TOP_LEFT);
   timeText = new TextElement(time, TOP_RIGHT);
 
   Container* topBar = new Container(Container::HORIZONTAL);
-  topBar->childSizes = {1, 1};
+  topBar->childSizes = {3, 1, 1};
+  topBar->margin_inner = 4;
   topBar->addChild(frequencyText);
+
+  ShapeElement* batteryIcon = new ShapeElement();
+  batteryIcon->drawFunc = [this](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
+    float w_to_h_ratio = 1.8;
+    int16_t minWidth = (int16_t)(h * w_to_h_ratio < w) ? h * w_to_h_ratio : w;
+    Size size = {(uint16_t)(minWidth), (uint16_t)(minWidth / w_to_h_ratio)};
+    Size capSize = {(uint16_t)(size.w * 0.1), (uint16_t)(size.h * 0.5)};
+    uint8_t bodyWidth = size.w - capSize.w;
+    uint8_t rounding = static_cast<uint8_t>(size.w * 0.1);
+    uint8_t batteryMargin = 2;
+
+    // Make sure cap can be centered on body (both heights even or both odd)
+    capSize.h += (capSize.h + size.h) % 2;
+
+    Point corner = alignInsideBox(TOP_RIGHT, {x, y, w, h}, size, 0);
+
+    display.drawRoundRect(corner.x, corner.y, bodyWidth, size.h, rounding + 1, GxEPD_BLACK);
+    display.fillRoundRect(corner.x + bodyWidth, corner.y + (size.h - capSize.h) / 2, capSize.w, capSize.h, 30, GxEPD_BLACK);
+
+    display.fillRoundRect(corner.x + batteryMargin, corner.y + batteryMargin, (bodyWidth - 2 * batteryMargin) * batteryLevel / 100, size.h - 2 * batteryMargin, rounding, GxEPD_BLACK);
+  };
+
+  topBar->addChild(batteryIcon);
   topBar->addChild(timeText);
   
   infoBox->addChild(topBar);
@@ -292,7 +326,7 @@ void GUI::buildVolume() {
       actualWidth = size.w - (maxWaves - waveCount) * soundWaveDistance; // Simplified sound wave width calculation from drawArc parameters
     }
 
-    Point corner = alignInsideBox(MIDDLE_CENTER, {x, y, w, h}, {actualWidth, size.h}, 0);
+    Point corner = alignInsideBox(MIDDLE_CENTER, {x, y, w, h}, {static_cast<uint16_t>(actualWidth), static_cast<uint16_t>(size.h)}, 0);
 
     uint8_t rounding = 1;
     Point center = {static_cast<int16_t>(corner.x + size.w / 2), static_cast<int16_t>(corner.y + size.h / 2)};
