@@ -169,7 +169,7 @@ void GUI::setBatteryLevel(float level) {
 }
 
 uint8_t GUI::getBatteryLevel() const {
-  return batteryLevel;
+  return (batteryLevel == -1) ? 0 : batteryLevel;
 }
 
 void GUI::buildLayout() {
@@ -240,18 +240,26 @@ void GUI::buildInfo() {
     float w_to_h_ratio = 1.8;
     int16_t minWidth = (int16_t)(h * w_to_h_ratio < w) ? h * w_to_h_ratio : w;
     Size size = {(uint16_t)(minWidth), (uint16_t)(minWidth / w_to_h_ratio)};
-    Size capSize = {(uint16_t)(size.w * 0.1), (uint16_t)(size.h * 0.5)};
+    Size capSize = {(uint16_t)(size.w * 0.1), (uint16_t)(size.h * 0.3)};
     uint8_t bodyWidth = size.w - capSize.w;
     uint8_t rounding = static_cast<uint8_t>(size.w * 0.1);
     uint8_t batteryMargin = 2;
 
     // Make sure cap can be centered on body (both heights even or both odd)
-    capSize.h += (capSize.h + size.h) % 2;
+    capSize.h += (1 + capSize.h + size.h) % 2;
 
     Point corner = alignInsideBox(TOP_RIGHT, {x, y, w, h}, size, 0);
 
     display.drawRoundRect(corner.x, corner.y, bodyWidth, size.h, rounding + 1, GxEPD_BLACK);
-    display.fillRoundRect(corner.x + bodyWidth, corner.y + (size.h - capSize.h) / 2, capSize.w, capSize.h, 30, GxEPD_BLACK);
+
+    int8_t capRounding;
+    for (uint8_t i = 0; i < capSize.w; i++) {
+      capRounding = ((i == capSize.w - 1));
+      display.drawLine( corner.x + bodyWidth + i, 
+                        corner.y + (size.h - capSize.h) / 2 + capRounding, 
+                        corner.x + bodyWidth + i, 
+                        corner.y + (size.h + capSize.h) / 2 - capRounding, GxEPD_BLACK);
+    }
 
     display.fillRoundRect(corner.x + batteryMargin, corner.y + batteryMargin, (bodyWidth - 2 * batteryMargin) * batteryLevel / 100, size.h - 2 * batteryMargin, rounding, GxEPD_BLACK);
   };
@@ -317,7 +325,7 @@ void GUI::buildVolume() {
     int16_t actualWidth;
 
     if (isVolumeMuted()) {
-      actualWidth = 1 + muteLineWidth + size.h * 0.8;
+      actualWidth = 1 + size.h * 0.8;
     } else {
       actualWidth = size.w - (maxWaves - waveCount) * soundWaveDistance; // Simplified sound wave width calculation from drawArc parameters
     }
@@ -342,7 +350,7 @@ void GUI::buildVolume() {
     if (isVolumeMuted()) {
       for (uint8_t i = 0; i <= muteLineWidth; i++) {
         uint16_t color = (i == 0) ? GxEPD_WHITE : GxEPD_BLACK;
-        display.drawLine(corner.x + i, corner.y + size.h * 0.1, corner.x + 1 + i + size.h * 0.8, corner.y + size.h * 0.9, color);
+        display.drawLine(corner.x - muteLineWidth + i, corner.y + size.h * 0.1, corner.x - muteLineWidth + 1 + i + size.h * 0.8, corner.y + size.h * 0.9, color);
       }
     } else {
       for (int8_t i = 2; i >= maxWaves - waveCount; i--) {
@@ -371,7 +379,7 @@ void GUI::applyInfo() {
   topBar->children = {frequencyText};
   
   // Fix top bar layout based on which elements are defined
-  if (batteryLevel != NULL) {
+  if (batteryLevel != -1) {
     topBar->childSizes.push_back(1);
     topBar->addChild(batteryIcon);
   }

@@ -67,7 +67,7 @@ private:
   uint8_t volume = 0;
   uint8_t maxVolume = 15;
   bool volumeMuted = false;
-  uint8_t batteryLevel = NULL;
+  int8_t batteryLevel = -1;
 
   static void displayWorker(void * param);
 
