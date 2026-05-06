@@ -231,12 +231,11 @@ void GUI::buildInfo() {
   stationText = new TextElement(stationName, TOP_LEFT);
   timeText = new TextElement(time, TOP_RIGHT);
 
-  Container* topBar = new Container(Container::HORIZONTAL);
-  topBar->childSizes = {3, 1, 1};
+  topBar = new Container(Container::HORIZONTAL);
   topBar->margin_inner = 4;
   topBar->addChild(frequencyText);
 
-  ShapeElement* batteryIcon = new ShapeElement();
+  batteryIcon = new ShapeElement();
   batteryIcon->drawFunc = [this](Adafruit_GFX& display, int16_t x, int16_t y, uint16_t w, uint16_t h) {
     float w_to_h_ratio = 1.8;
     int16_t minWidth = (int16_t)(h * w_to_h_ratio < w) ? h * w_to_h_ratio : w;
@@ -256,9 +255,6 @@ void GUI::buildInfo() {
 
     display.fillRoundRect(corner.x + batteryMargin, corner.y + batteryMargin, (bodyWidth - 2 * batteryMargin) * batteryLevel / 100, size.h - 2 * batteryMargin, rounding, GxEPD_BLACK);
   };
-
-  topBar->addChild(batteryIcon);
-  topBar->addChild(timeText);
   
   infoBox->addChild(topBar);
   infoBox->addChild(stationText);
@@ -369,6 +365,23 @@ void GUI::applyInfo() {
   if (frequencyText) frequencyText->text = String(frequency, 1) + " MHz";
   if (stationText) stationText->text = stationName;
   if (timeText) timeText->text = time;
+
+  const uint8_t topBarParts = 5;
+  topBar->childSizes = {topBarParts};
+  topBar->children = {frequencyText};
+  
+  // Fix top bar layout based on which elements are defined
+  if (batteryLevel != NULL) {
+    topBar->childSizes.push_back(1);
+    topBar->addChild(batteryIcon);
+  }
+
+  if (timeText->text.length() > 0) {
+    topBar->childSizes.push_back(1);
+    topBar->addChild(timeText);
+  }
+
+  topBar->childSizes[0] = topBarParts - (topBar->childSizes.size() - 1);
 }
 
 void GUI::applyVolume() {

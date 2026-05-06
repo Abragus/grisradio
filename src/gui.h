@@ -48,11 +48,14 @@ private:
   Container* root = nullptr;
   Container* presetsBox = nullptr;
   Container* infoBox = nullptr;
+  Container* topBar = nullptr;
   Container* volumeBox = nullptr;
   TextElement* frequencyText = nullptr;
   TextElement* timeText = nullptr;
   TextElement* stationText = nullptr;
   ShapeElement* volumeLevel = nullptr;
+
+  ShapeElement* batteryIcon = nullptr;
   TaskHandle_t displayWorkerHandle = NULL;
   bool needsRedraw = false;
 
@@ -64,8 +67,8 @@ private:
   uint8_t volume = 0;
   uint8_t maxVolume = 15;
   bool volumeMuted = false;
-  uint8_t batteryLevel = 0;
-  
+  uint8_t batteryLevel = NULL;
+
   static void displayWorker(void * param);
 
   void updateActivePreset();
