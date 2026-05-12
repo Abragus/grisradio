@@ -178,7 +178,7 @@ void loop() {
     if (newBattery < 4219) {
       newBattery = map(newBattery, 3599, 4219, 0, 20);
     } else {
-      newBattery = map(newBattery, 4219, 5150, 20, 100);
+      newBattery = map(newBattery, 4219, 5130, 20, 100);
     }
 
     programInformation.push_front(cleanString(radio.getRdsProgramInformation()));
