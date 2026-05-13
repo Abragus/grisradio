@@ -6,7 +6,7 @@ void Radio::setup() {
     rx.setVolume(1);
     rx.setMono(true);
     rx.setRDS(true);
-    rx.setRdsFifo(true);
+    rx.setRdsFifo(false);
     rx.setNewDemodulateMethod(true);
 }
 

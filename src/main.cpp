@@ -11,10 +11,10 @@ GUI gui;
 ButtonManager buttonManager;
 Radio radio;
 
-  String bestStationName, lastStationName, bestProgramInformation, lastProgramInformation, localTime, newLocalTime;
-  std::deque<String> programInformation, stationName;
-  bool rdsUpdate;
-  uint16_t battery, newBattery;
+String currentStationName, currentProgramInformation, localTime, newLocalTime;
+std::deque<String> programInformation, stationName;
+bool rdsUpdate;
+uint16_t battery, newBattery;
 
 void setVolume(uint8_t volume) {
   if (volume > 15) {
@@ -38,9 +38,9 @@ void setVolumeDown() {
 
 void clearRDS() {
   stationName.clear();
-  lastStationName = "";
+  currentStationName = "";
   programInformation.clear();
-  lastProgramInformation = "";
+  currentProgramInformation = "";
 
   gui.setStationName("");
 }
@@ -64,15 +64,18 @@ void setFrequencyDown() {
 }
 
 void activatePreset(uint8_t preset) {
+  clearRDS();
   radio.setFrequency((uint16_t) (gui.activatePreset(preset) * 100));
 }
 
 void seekDown() {
+  clearRDS();
   radio.seekDown();
   gui.setFrequency(radio.getFrequency()/100);
 }
 
 void seekUp() {
+  clearRDS();
   radio.seekUp();
   gui.setFrequency(radio.getFrequency()/100);
 }
@@ -85,6 +88,9 @@ void toggleMute() {
   }
 }
 
+static const char allowedExtraChars[] = " åäöÅÄÖ";
+static const char toleratedSpecialChars[] = ".,!?&-'():$/";
+
 void filterRDSText(char* str) {
   if (str == nullptr) return;
 
@@ -94,29 +100,54 @@ void filterRDSText(char* str) {
   while (*src) {
     char c = *src;
 
-    // Check if character is in our "Keep" whitelist
-    if ((c >= 'A' && c <= 'Z') ||       // Uppercase
-        (c >= 'a' && c <= 'z') ||       // Lowercase
-        (c >= '0' && c <= '9') ||       // Numbers
-        (c == ' ')  || (c == '.')  ||   // Space and period
-        (c == ',')  || (c == '!')  ||   // Comma and bang
-        (c == '?')  || (c == '&')  ||   // Question and ampersand
-        (c == '-')  || (c == '\'') ||   // Dash and apostrophe
-        (c == '(')  || (c == ')')  ||   // Parentheses
-        (c == ':')  ||   // Colons
-        (c == '$')  ||  // Symbols
-        (c == '/'))     // Math/Paths
-    {
+    // Check if character is in whitelist
+    if (isalnum((unsigned char)c) || strchr(toleratedSpecialChars, c) || strchr(allowedExtraChars, c)) {
       *dst++ = c;
     }
     src++;
   }
-  *dst = '\0'; // Properly terminate the filtered string
+      
+  // Trim trailing space and null-terminate
+  if (dst > str && *(dst - 1) == ' ') dst--;
+  *dst = '\0';
 }
 
 char* cleanString(char* s) {
   filterRDSText(s);
   return s;
+}
+
+String handleRDSinfo(std::deque<String> * queue, String newString) {
+  queue->push_front(String(cleanString((char*) newString.c_str())));
+  if (queue->front() == "") {
+    Serial.println("Empty RDS info received, skipping...");
+    queue->pop_front();
+    return "";
+  }
+  String bestString = "";
+  
+  Serial.println("New RDS info: '" + newString + "'");
+  if(queue->size() > FIFOQueueLength) {
+    queue->pop_back();
+  }
+
+  int8_t highestScore = -1;
+  // Give points to each string, according to:
+  // Length + Occurences in the queue - Number of special chars (toleratedSpecialChars)
+  for (String str : *queue) {
+    int8_t score = str.length() + std::count(queue->begin(), queue->end(), str);
+    for (char c : toleratedSpecialChars) {
+      score -= std::count(str.begin(), str.end(), c);
+    }
+
+    if(score > highestScore) {
+      highestScore = score;
+      bestString = str;
+    }
+  }
+  Serial.println("Best RDS string: '" + bestString + "' with score " + String(highestScore) + ", occurences: " + String(std::count(queue->begin(), queue->end(), bestString)));
+
+  return bestString;
 }
 
 void setup() {
@@ -166,8 +197,6 @@ void loop() {
   buttonManager.loop();
   if (millis() > prev + 1000) {
     newLocalTime = radio.getRdsLocalTime();
-    bestProgramInformation = "";
-    bestStationName = "";
     newBattery = 0;
 
     for (size_t i = 0; i < 20; i++) {
@@ -175,37 +204,25 @@ void loop() {
     }
 
     newBattery = newBattery/10; // newBattery/20 * 2
+    
     if (newBattery < 4219) {
       newBattery = map(newBattery, 3599, 4219, 0, 20);
     } else {
       newBattery = map(newBattery, 4219, 5130, 20, 100);
     }
 
-    programInformation.push_front(cleanString(radio.getRdsProgramInformation()));
-    if(programInformation.size() > FIFOQueueLength) {
-      programInformation.pop_back();
+    Serial.println(radio.getRdsReady() ? "\n\nRDS ready. " : "\n\nRDS not ready. ");
+    String newStationName = handleRDSinfo(&stationName, radio.getRdsStationName());
+    if (newStationName.length() > 0 && newStationName != currentStationName) {
+      currentStationName = newStationName;
+      rdsUpdate = true;
     }
 
-    for(String progInfo : programInformation) {
-      if(progInfo.length() > bestProgramInformation.length()) {
-        bestProgramInformation = progInfo;
-      }
+    String newProgramInformation = handleRDSinfo(&programInformation, radio.getRdsProgramInformation());
+    if (newProgramInformation.length() > 0 && newProgramInformation != currentProgramInformation) {
+      currentProgramInformation = newProgramInformation;
+      rdsUpdate = true;
     }
-
-    if(bestProgramInformation != lastProgramInformation) {rdsUpdate = true;}
-
-    stationName.push_front(cleanString(radio.getRdsStationName()));
-    if(stationName.size() > FIFOQueueLength) {
-      stationName.pop_back();
-    }
-
-    for(String statName : stationName) {
-      if(statName.length() > bestStationName.length()) {
-        bestStationName = statName;
-      }
-    }
-
-    if(bestStationName != lastStationName) {rdsUpdate = true;}
 
     if(newLocalTime != localTime && localTime != "") {
       localTime = newLocalTime;
@@ -218,9 +235,7 @@ void loop() {
     }
 
     if(rdsUpdate) {
-      lastStationName = bestStationName;
-      lastProgramInformation = bestProgramInformation;
-      gui.setStationName(bestStationName + "\n" + bestProgramInformation);
+      gui.setStationName(currentStationName + "\n" + currentProgramInformation);
       rdsUpdate = false;
     }
 
