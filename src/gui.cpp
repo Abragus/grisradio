@@ -3,7 +3,7 @@
 
 GUI::GUI() {
   SPI.begin(DISPLAY_CLK, -1, DISPLAY_DIN, DISPLAY_CS);
-  display.init(115200, true, 2, false, SPI, SPISettings(2000000, MSBFIRST, SPI_MODE0));
+  display.init(115200, true, 2, false, SPI, SPISettings(20000000, MSBFIRST, SPI_MODE0));
   display.setRotation(3);
   display.setFont(font);
   display.setTextColor(GxEPD_BLACK);
@@ -201,6 +201,7 @@ void GUI::buildLayout() {
 void GUI::buildPresets() {
   presetsBox = new Container(Container::HORIZONTAL);
   presetsBox->setMargin(0, 0, 8);
+  presetsBox->setPadding(-6, 0);
 
   const String bottomTexts[] = {"CH1", "CH2", "CH3", "CH4"};
   const uint8_t boxRadius = 12;
